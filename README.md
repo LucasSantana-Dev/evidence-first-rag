@@ -71,6 +71,9 @@ the cases it fails is the first thing this project refuses to do — see
   the approach; fork the harness, not the wiring.
 - **Not state-of-the-art retrieval research** — a pragmatic single-user system that
   knows its own ceiling and stops there.
+- **Not a maintained project** — a solo operator's personal tool, shared for the
+  methodology. Issues and PRs are welcome but may not be triaged; expect best-effort,
+  no SLA.
 
 ## Extending
 
