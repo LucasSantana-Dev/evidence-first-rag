@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+.DS_Store
+eval/*.json
+!eval/baseline.example.json
+corpus-demo/.index/
+*.egg-info/
+.venv/
