@@ -1,0 +1,54 @@
+"""Configuration for evidence-first-rag — env-var driven, zero external deps.
+
+Every value is overridable via an environment variable (all prefixed ``RAG_``).
+The defaults make the tool usable with no setup: it indexes the current working
+directory into a local ``./.rag-index/`` using a small multilingual embedding
+model.
+
+    RAG_INDEX_DIR        where the sqlite index lives          (default: .rag-index)
+    RAG_SOURCE_ROOTS     os.pathsep-separated dirs to index    (default: cwd)
+    RAG_EMBED_MODEL      sentence-transformers model id        (default: e5-small)
+    RAG_EMBED_DIM        embedding dimensionality              (default: 384)
+    RAG_MAX_FILE_BYTES   skip files larger than this           (default: 200000)
+    RAG_GIT_LOG_DAYS     commit-history window to index        (default: 180)
+
+Retrieval-time flags (RAG_HYBRID, RAG_BM25_WEIGHT, RAG_RERANK_MODEL, …) are read
+in retrieval.py where they are used.
+"""
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+
+def _roots(val: str) -> list[Path]:
+    return [Path(p).expanduser().resolve() for p in val.split(os.pathsep) if p.strip()]
+
+
+# --- index location -------------------------------------------------------
+INDEX_DIR = Path(os.environ.get("RAG_INDEX_DIR", ".rag-index")).expanduser()
+DB = INDEX_DIR / "index.sqlite"
+QLOG = INDEX_DIR / "queries.sqlite"
+
+# --- what to index --------------------------------------------------------
+# Each root contributes its source code + markdown docs (README, CHANGELOG,
+# docs/**). Default: the current working directory, so the tool indexes itself.
+SOURCE_ROOTS = _roots(os.environ.get("RAG_SOURCE_ROOTS", "")) or [Path.cwd()]
+
+# --- embedding ------------------------------------------------------------
+EMBED_MODEL = os.environ.get("RAG_EMBED_MODEL", "intfloat/multilingual-e5-small")
+EMBED_DIM = int(os.environ.get("RAG_EMBED_DIM", "384"))
+
+# --- indexing limits ------------------------------------------------------
+MAX_FILE_BYTES = int(os.environ.get("RAG_MAX_FILE_BYTES", "200000"))
+GIT_LOG_DAYS = int(os.environ.get("RAG_GIT_LOG_DAYS", "180"))
+
+CODE_EXTS = {".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".sh", ".bash", ".zsh"}
+
+EXCLUDED_DIR_PARTS = {
+    "site-packages", "htmlcov", ".eggs", ".tox", "node_modules", "vendor",
+    "dist", "build", "coverage", ".git", ".next", ".turbo", "venv", ".venv",
+    "__pycache__", ".pytest_cache", ".mypy_cache", "test-results",
+    "playwright-report", ".storybook", ".docusaurus", ".worktrees", "worktrees",
+    ".rag-index",
+}

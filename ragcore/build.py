@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
-"""Chunk + embed curated sources into ~/.claude/rag-index/index.sqlite.
+"""Chunk + embed configured source roots into a local sqlite index.
 
-Markdown sources (memory, plans, handoffs, skills, codex, changelog, repo-docs,
-repo-readme) plus curated source-code dirs (src/**) for a whitelisted set of
-repos. Language-aware chunkers split by symbol where possible.
+For each root in ``RAG_SOURCE_ROOTS`` (see config.py) this indexes:
+  - source code (language-aware chunking by symbol where possible)
+  - markdown docs: README, CHANGELOG, docs/**/*.md
+  - recent git commits (subject + body head), if the root is a git repo
 
 Usage:
-  build.py                                           # full rebuild
-  build.py --incremental <file> [...files]           # reindex specific files
+  build.py                                   # full rebuild of all roots
+  build.py --no-code                         # docs + commits only
+  build.py --incremental <file> [...files]   # reindex specific files
 """
 from __future__ import annotations
 
 import argparse
 import hashlib
 import sqlite3
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -21,93 +24,18 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent))
-import subprocess
 from chunkers import chunk_file, detect_language
-
-ROOT = Path.home() / ".claude" / "rag-index"
-DB = ROOT / "index.sqlite"
-MODEL_NAME = "intfloat/multilingual-e5-small"
-DIM = 384
-HOME = Path.home()
-MAX_FILE_BYTES = 200_000
-EXCLUDED_DIR_PARTS = {
-    "site-packages",
-    "htmlcov",
-    ".eggs",
-    ".tox",
-    "node_modules",
-    "vendor",
-    "dist",
-    "build",
-    "coverage",
-    ".git",
-    ".next",
-    ".turbo",
-    "venv",
-    ".venv",
-    "__pycache__",
-    ".pytest_cache",
-    ".mypy_cache",
-    "test-results",
-    "playwright-report",
-    ".storybook",
-    ".docusaurus",
-    ".worktrees",
-    "worktrees",
-    ".wt-res",
-    ".wt-luckynotify",
-    ".wt-notify",
-    ".wt-ufw",
-    ".wt-strict",
-    ".wt-renovate",
-    ".wt-disc",
-    ".wt-fix",
-    ".wt-notify-clean",
-}
-CODE_EXTS = {".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".sh", ".bash", ".zsh"}
-
-CURATED_REPOS = [
-    HOME / "Desenvolvimento" / "Lucky",
-    HOME / "Desenvolvimento" / "homelab",
-    HOME / "Desenvolvimento" / "Craftvaria",
-    HOME / "Desenvolvimento" / "ai-dev-toolkit",
-    HOME / "Desenvolvimento" / "ai-dev-toolkit-setup",
-    # Forge-Space repos (core, siza-gen, ui-mcp, mcp-gateway, branding-mcp,
-    # siza-desktop) removed 2026-05-03 — org wound down 2026-04-20 per
-    # MEMORY.md; their code was generating noise in RAG queries.
-]
-
-WORKSTATION_CODE_GLOBS = [
-    str(HOME / ".claude/rag-index/*.py"),
-    str(HOME / ".claude/rag-index/*.sh"),
-    str(HOME / ".codex/scripts/*.sh"),
-]
-
-SOURCES: list[tuple[str, str]] = [
-    ("memory", str(HOME / ".claude/projects/*/memory/*.md")),
-    ("plans", str(HOME / ".claude/plans/*.md")),
-    ("adrs", str(HOME / ".claude/adrs/*.md")),
-    ("handoffs", str(HOME / ".claude/handoffs/*/*.md")),
-    ("skills", str(HOME / ".claude/skills/*/SKILL.md")),
-    ("standards", str(HOME / ".claude/standards/*.md")),
-    ("codex", str(HOME / ".codex/AGENTS.md")),
-    ("codex-rules", str(HOME / ".codex/rules/*.rules")),
-    ("codex-memory", str(HOME / ".codex/memories/**/*.md")),
-    ("serena", str(HOME / ".serena/memories/**/*.md")),
-    ("memory-export", str(HOME / ".claude/memory-exports/*.md")),
-]
-for repo in CURATED_REPOS:
-    if not repo.is_dir():
-        continue
-    SOURCES.append(("changelog", str(repo / "CHANGELOG.md")))
-    SOURCES.append(("repo-docs", str(repo / "docs/**/*.md")))
-    SOURCES.append(("repo-readme", str(repo / "README.md")))
-    SOURCES.append(("spec", str(repo / "docs/specs/**/*.md")))
-    SOURCES.append(("roadmap", str(repo / "docs/roadmap.md")))
-    SOURCES.append(("serena", str(repo / ".serena/memories/*.md")))
-for glob in WORKSTATION_CODE_GLOBS:
-    SOURCES.append(("workstation-code", glob))
-
+from config import (
+    CODE_EXTS,
+    DB,
+    EMBED_DIM as DIM,
+    EMBED_MODEL as MODEL_NAME,
+    EXCLUDED_DIR_PARTS,
+    GIT_LOG_DAYS,
+    INDEX_DIR,
+    MAX_FILE_BYTES,
+    SOURCE_ROOTS,
+)
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS chunks (
@@ -130,68 +58,113 @@ CREATE INDEX IF NOT EXISTS chunks_repo ON chunks(repo);
 """
 
 
+def is_excluded_path(relative_path: Path) -> bool:
+    for part in relative_path.parts:
+        if part in EXCLUDED_DIR_PARTS:
+            return True
+        if part.startswith(".venv") or part.startswith(".wt-"):
+            return True
+    return False
+
+
+def classify_repo(path: Path) -> str | None:
+    rp = path.resolve()
+    for root in SOURCE_ROOTS:
+        for base in (root, root.resolve()):
+            try:
+                rp.relative_to(base)
+                return root.name
+            except ValueError:
+                continue
+    return None
+
+
+def classify_type(path: Path) -> str:
+    s = str(path)
+    name = path.name.lower()
+    if name.startswith("readme"):
+        return "repo-readme"
+    if name == "changelog.md":
+        return "changelog"
+    if s.endswith("docs/roadmap.md"):
+        return "roadmap"
+    if "/docs/specs/" in s and s.endswith(".md"):
+        return "spec"
+    if "/docs/" in s and s.endswith(".md"):
+        return "repo-docs"
+    if path.suffix.lower() in CODE_EXTS:
+        return "code"
+    if s.endswith(".md"):
+        return "repo-docs"
+    return "other"
+
+
 def iter_md_sources() -> list[tuple[str, Path]]:
+    """README / CHANGELOG / docs markdown across all source roots."""
     results: list[tuple[str, Path]] = []
-    for stype, glob in SOURCES:
-        base = Path(glob.split("*", 1)[0])
-        if "**" in glob:
-            pattern = glob.split("/**/", 1)[1]
-            for p in base.rglob(pattern):
-                if p.is_file():
-                    results.append((stype, p))
-        elif "*" in glob:
-            parent = Path(glob).parent
-            name_pat = Path(glob).name
-            if "*" in str(parent):
-                # Handle double-wildcard patterns like .../*/memory/*.md
-                # Extract everything after the first wildcard (e.g., /memory/*.md)
-                grandparent = Path(str(parent).split("*", 1)[0])
-                rest_pattern = glob.split("*", 1)[1].lstrip("/")
-                for sub in grandparent.glob("*"):
-                    if sub.is_dir():
-                        for p in sub.glob(rest_pattern):
-                            if p.is_file():
-                                results.append((stype, p))
-            else:
-                for p in parent.glob(name_pat):
-                    if p.is_file():
-                        results.append((stype, p))
-        else:
-            p = Path(glob)
+    seen: set[Path] = set()
+    for root in SOURCE_ROOTS:
+        if not root.is_dir():
+            continue
+        candidates: list[Path] = []
+        for name in ("README.md", "readme.md", "CHANGELOG.md"):
+            p = root / name
             if p.is_file():
-                results.append((stype, p))
+                candidates.append(p)
+        docs = root / "docs"
+        if docs.is_dir():
+            candidates.extend(p for p in docs.rglob("*.md") if p.is_file())
+        for p in candidates:
+            rp = p.resolve()
+            if rp in seen:
+                continue
+            try:
+                if is_excluded_path(p.relative_to(root)):
+                    continue
+            except ValueError:
+                pass
+            seen.add(rp)
+            results.append((classify_type(p), p))
     return results
 
 
-GIT_LOG_DAYS = 180
+def iter_code_sources() -> list[tuple[str, Path]]:
+    results: list[tuple[str, Path]] = []
+    for root in SOURCE_ROOTS:
+        if not root.is_dir():
+            continue
+        for p in root.rglob("*"):
+            if not p.is_file() or p.suffix.lower() not in CODE_EXTS:
+                continue
+            if is_excluded_path(p.relative_to(root)):
+                continue
+            try:
+                if p.stat().st_size > MAX_FILE_BYTES:
+                    continue
+            except OSError:
+                continue
+            results.append(("code", p))
+    return results
 
 
 def collect_commit_chunks() -> list[dict]:
-    """Run git log on each curated repo; one chunk per commit (subject + body head)."""
+    """Run git log on each source root; one chunk per commit (subject + body head)."""
     rows: list[dict] = []
-    for repo in CURATED_REPOS:
-        if not (repo / ".git").exists():
+    for root in SOURCE_ROOTS:
+        if not (root / ".git").exists():
             continue
         try:
             proc = subprocess.run(
                 [
-                    "git",
-                    "-C",
-                    str(repo),
-                    "log",
-                    f"--since={GIT_LOG_DAYS}.days",
-                    "--no-merges",
+                    "git", "-C", str(root), "log",
+                    f"--since={GIT_LOG_DAYS}.days", "--no-merges",
                     "--pretty=format:%H%x01%ai%x01%an%x01%s%x01%b%x02",
                 ],
-                capture_output=True,
-                text=True,
-                check=True,
-                timeout=30,
+                capture_output=True, text=True, check=True, timeout=30,
             )
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
             continue
-        raw = proc.stdout
-        for entry in raw.split("\x02"):
+        for entry in proc.stdout.split("\x02"):
             entry = entry.strip()
             if not entry:
                 continue
@@ -200,16 +173,15 @@ def collect_commit_chunks() -> list[dict]:
                 continue
             sha, date_str, author, subject = parts[:4]
             body = parts[4] if len(parts) == 5 else ""
-            body_head = body.strip().splitlines()
-            body_top = "\n".join(body_head[:6])[:1200]
+            body_top = "\n".join(body.strip().splitlines()[:6])[:1200]
             text = f"{subject}\n\n{body_top}".strip()
             rows.append(
                 {
                     "source_type": "commit",
-                    "repo": repo.name,
+                    "repo": root.name,
                     "language": "git",
                     "symbol": sha[:7],
-                    "path": f"git:{repo.name}@{sha}",
+                    "path": f"git:{root.name}@{sha}",
                     "start": 0,
                     "end": 0,
                     "text": text[:4000],
@@ -221,103 +193,22 @@ def collect_commit_chunks() -> list[dict]:
     return rows
 
 
-def iter_code_sources() -> list[tuple[str, Path]]:
-    results: list[tuple[str, Path]] = []
-    for repo in CURATED_REPOS:
-        if not repo.is_dir():
-            continue
-        for p in repo.rglob("*"):
-            if not p.is_file():
-                continue
-            if p.suffix.lower() not in CODE_EXTS:
-                continue
-            if is_excluded_path(p.relative_to(repo)):
-                continue
-            try:
-                if p.stat().st_size > MAX_FILE_BYTES:
-                    continue
-            except OSError:
-                continue
-            results.append(("code", p))
-    return results
-
-
-def is_excluded_path(relative_path: Path) -> bool:
-    for part in relative_path.parts:
-        if part in EXCLUDED_DIR_PARTS:
-            return True
-        if part.startswith(".venv"):   # .venv_ci, .venv_dev, etc.
-            return True
-        if part.startswith(".wt-"):
-            return True
-    return False
-
-
 def file_sha(path: Path) -> str:
     h = hashlib.sha1()
     h.update(path.read_bytes())
     return h.hexdigest()
 
 
-def classify_repo(path: Path) -> str | None:
-    # Compare against both the symlink path (~/Desenvolvimento/X) and its
-    # resolved target (/Volumes/External HD/...) — resolve() expands the
-    # symlink, so matching only the unresolved repo path never hits.
-    rp = path.resolve()
-    for repo in CURATED_REPOS:
-        for base in (repo, repo.resolve()):
-            try:
-                rp.relative_to(base)
-                return repo.name
-            except ValueError:
-                continue
-    return None
-
-
-def classify_type(path: Path) -> str:
-    s = str(path)
-    if "/memory/" in s:
-        return "memory"
-    if "/plans/" in s:
-        return "plans"
-    if "/adrs/" in s and s.endswith(".md"):
-        return "adrs"
-    if "/handoffs/" in s:
-        return "handoffs"
-    if "/.claude/skills/" in s or "/.agents/skills/" in s:
-        return "skills"
-    if "/.codex/" in s:
-        return "codex"
-    if "/standards/" in s and s.endswith(".md"):
-        return "standards"
-    if s.endswith("CHANGELOG.md"):
-        return "changelog"
-    if s.endswith("README.md"):
-        return "repo-readme"
-    if s.endswith("/docs/roadmap.md") or s.endswith("docs/roadmap.md"):
-        return "roadmap"
-    if "/docs/specs/" in s and s.endswith(".md"):
-        return "spec"
-    if "/docs/" in s and s.endswith(".md"):
-        return "repo-docs"
-    if s.startswith(str(HOME / ".claude/rag-index/")) or s.startswith(str(HOME / ".codex/scripts/")):
-        return "workstation-code"
-    if path.suffix.lower() in CODE_EXTS:
-        return "code"
-    return "other"
-
-
 def connect() -> sqlite3.Connection:
-    ROOT.mkdir(parents=True, exist_ok=True)
+    INDEX_DIR.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB, timeout=10)
-    conn.execute("PRAGMA journal_mode=WAL"); conn.execute("PRAGMA busy_timeout=10000")  # WAL+timeout hardening
+    conn.execute("PRAGMA journal_mode=WAL"); conn.execute("PRAGMA busy_timeout=10000")
     conn.executescript(SCHEMA)
     return conn
 
 
 def embed(model, texts: list[str]) -> np.ndarray:
-    # E5 model requires "passage: " prefix for indexed chunks; this is added
-    # at embed time only, not stored in the database.
+    # E5 requires a "passage: " prefix for indexed chunks; added at embed time only.
     prefixed_texts = [f"passage: {t}" for t in texts]
     vecs = model.encode(
         prefixed_texts, normalize_embeddings=True, convert_to_numpy=True, show_progress_bar=False
@@ -333,24 +224,19 @@ def index_files(
     total = 0
     batch_texts: list[str] = []
     batch_meta: list[dict] = []
-    for stype_hint, path in files:
+    for stype, path in files:
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
         sha = file_sha(path)
         mtime = path.stat().st_mtime
-        stype = stype_hint if stype_hint != "code" else "code"
         repo = classify_repo(path)
         language = detect_language(path)
         for start, end, body, symbol in chunk_file(path, text):
-            # Contextual chunk prefix for embedding: adds source type, repo, file name, symbol
-            # Format: "<source_type> | <repo or ''> | <file name or doc title> | <symbol or ''>\n<chunk body>"
-            # This is only used for embedding, not stored in the database.
-            file_name = path.name
-            context_prefix = f"{stype} | {repo or ''} | {file_name} | {symbol or ''}"
+            # Contextual prefix for embedding (not stored): type | repo | file | symbol
+            context_prefix = f"{stype} | {repo or ''} | {path.name} | {symbol or ''}"
             contextualized_text = f"{context_prefix}\n{body[:4000]}"
-
             batch_texts.append(contextualized_text)
             batch_meta.append(
                 {
@@ -384,17 +270,8 @@ def _flush(conn, model, texts, meta):
     for m, vec in zip(meta, vecs):
         rows.append(
             (
-                m["source_type"],
-                m["repo"],
-                m["language"],
-                m["symbol"],
-                m["path"],
-                m["start"],
-                m["end"],
-                m["text"],
-                m["sha"],
-                m["mtime"],
-                vec.tobytes(),
+                m["source_type"], m["repo"], m["language"], m["symbol"], m["path"],
+                m["start"], m["end"], m["text"], m["sha"], m["mtime"], vec.tobytes(),
             )
         )
     conn.executemany(
@@ -424,55 +301,38 @@ def main() -> int:
             purge.append(str(p))
             if not p.exists():
                 continue
-            stype = classify_type(p)
-            targets.append((stype, p))
+            targets.append((classify_type(p), p))
         written = index_files(conn, model, targets, purge)
         print(f"incremental: {len(targets)} files, {written} chunks, {time.time()-started:.1f}s")
     else:
         conn.execute("DELETE FROM chunks")
         md_files = iter_md_sources()
         code_files = [] if args.no_code else iter_code_sources()
-        files = md_files + code_files
-        written = index_files(conn, model, files, [])
+        written = index_files(conn, model, md_files + code_files, [])
         commits_written = 0
         if not args.no_code:
             commit_rows = collect_commit_chunks()
-            if commit_rows:
-                texts = [r["text"] for r in commit_rows]
-                # Embed in batches to share with index_files pathway
-                for i in range(0, len(commit_rows), 64):
-                    batch = commit_rows[i : i + 64]
-                    # Add contextual prefix for commits: "commit | <repo>"
-                    contextualized_texts = [
-                        f"commit | {r['repo']}\n{r['text']}" for r in batch
-                    ]
-                    vecs = embed(model, contextualized_texts)
-                    sql_rows = []
-                    for m, vec in zip(batch, vecs):
-                        sql_rows.append(
-                            (
-                                m["source_type"],
-                                m["repo"],
-                                m["language"],
-                                m["symbol"],
-                                m["path"],
-                                m["start"],
-                                m["end"],
-                                m["text"],
-                                m["sha"],
-                                m["mtime"],
-                                vec.tobytes(),
-                            )
-                        )
-                    conn.executemany(
-                        "INSERT INTO chunks (source_type, repo, language, symbol, path, start_line, end_line, text, file_sha, mtime, embedding) "
-                        "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-                        sql_rows,
+            for i in range(0, len(commit_rows), 64):
+                batch = commit_rows[i : i + 64]
+                contextualized_texts = [f"commit | {r['repo']}\n{r['text']}" for r in batch]
+                vecs = embed(model, contextualized_texts)
+                sql_rows = [
+                    (
+                        m["source_type"], m["repo"], m["language"], m["symbol"], m["path"],
+                        m["start"], m["end"], m["text"], m["sha"], m["mtime"], vec.tobytes(),
                     )
-                    commits_written += len(batch)
-                conn.commit()
+                    for m, vec in zip(batch, vecs)
+                ]
+                conn.executemany(
+                    "INSERT INTO chunks (source_type, repo, language, symbol, path, start_line, end_line, text, file_sha, mtime, embedding) "
+                    "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                    sql_rows,
+                )
+                commits_written += len(batch)
+            conn.commit()
         print(
-            f"full rebuild: md={len(md_files)} code={len(code_files)} commits={commits_written} chunks={written+commits_written} t={time.time()-started:.1f}s"
+            f"full rebuild: md={len(md_files)} code={len(code_files)} "
+            f"commits={commits_written} chunks={written+commits_written} t={time.time()-started:.1f}s"
         )
     return 0
 

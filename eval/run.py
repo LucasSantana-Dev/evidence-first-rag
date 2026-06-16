@@ -18,10 +18,10 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "ragcore"))
 from retrieval import search
 
-DATASET = ROOT / "eval" / "dataset.jsonl"
+DATASET = ROOT / "eval" / "golden.demo.jsonl"
 
 
 def load(path: Path = DATASET) -> list[dict]:

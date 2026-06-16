@@ -7,30 +7,21 @@ from __future__ import annotations
 import os
 import re
 import sqlite3
+import sys
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 from rank_bm25 import BM25Okapi
 
-ROOT = Path.home() / ".claude" / "rag-index"
-DB = ROOT / "index.sqlite"
-QLOG = ROOT / "queries.sqlite"
-MODEL_NAME = "intfloat/multilingual-e5-small"
-DIM = 384
+sys.path.insert(0, str(Path(__file__).parent))
+from config import DB, QLOG, SOURCE_ROOTS, EMBED_MODEL as MODEL_NAME, EMBED_DIM as DIM
+
 RRF_K = 60
 BM25_WEIGHT = float(os.environ.get("RAG_BM25_WEIGHT", "1.5"))  # >1 favors lexical (code) match
 
-HOME = Path.home()
-# Mirror of build.py CURATED_REPOS — keep in sync. Forge-Space subdirs
-# removed 2026-05-03 after the org wound down.
-REPO_ROOTS = [
-    HOME / "Desenvolvimento" / "Lucky",
-    HOME / "Desenvolvimento" / "homelab",
-    HOME / "Desenvolvimento" / "Craftvaria",
-    HOME / "Desenvolvimento" / "ai-dev-toolkit",
-    HOME / "Desenvolvimento" / "ai-dev-toolkit-setup",
-]
+# Roots used to auto-detect the "repo" for cwd-scoped queries (from RAG_SOURCE_ROOTS).
+REPO_ROOTS = SOURCE_ROOTS
 
 _TOKEN_RE = re.compile(r"[A-Za-z_][\w$]{1,}")
 _SUB_RE = re.compile(r"[A-Z]+(?=[A-Z][a-z])|[A-Z][a-z]+|[a-z]+|[A-Z]+|\d+")
