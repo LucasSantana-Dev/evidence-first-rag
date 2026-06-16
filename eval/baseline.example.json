@@ -1,0 +1,17 @@
+{
+  "n": 12,
+  "mrr": 0.833,
+  "hit@1": 0.833,
+  "hit@3": 0.833,
+  "hit@5": 0.833,
+  "by_scope": {
+    "code": {
+      "n": 12,
+      "mrr": 0.833,
+      "hit@1": 0.833,
+      "hit@3": 0.833,
+      "hit@5": 0.833
+    }
+  },
+  "_note": "Frozen baseline for eval/golden.demo.jsonl: repo self-indexed, pure hybrid (RAG_RERANK_AUTO=off)."
+}
