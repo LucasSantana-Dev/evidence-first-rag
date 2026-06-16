@@ -55,7 +55,7 @@ the cases it fails is the first thing this project refuses to do — see
 
 - **Hybrid retrieval** — dense embeddings (`intfloat/multilingual-e5-small`) + lexical
   BM25, fused with Reciprocal Rank Fusion. A code-aware tokenizer splits identifiers
-  into `camelCase`/`snake_case` subtokens so "create player" matches `createPlayer`.
+  into `camelCase`/`snake_case` subtokens so "get user profile" matches `getUserProfile`.
 - **Selective reranking** (optional) — a cross-encoder reranker that, when enabled, is
   scoped to code-scope queries only (it was measured to *help* code and *regress*
   prose), with graceful fallback to the fused ranking if the model isn't present.

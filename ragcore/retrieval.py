@@ -95,7 +95,7 @@ def _get_model():
 
 def _tokenize(text: str) -> list[str]:
     # Code-aware: whole identifier (lowercased) + camelCase/snake_case/dotted sub-tokens,
-    # so natural-language queries ("create player") match symbol names ("createPlayer").
+    # so natural-language queries ("get user profile") match symbol names ("getUserProfile").
     # Applied to both corpus and query sides. Validated +2.8pp code / +3.2pp overall, 0 regressions.
     out: list[str] = []
     for tok in _TOKEN_RE.findall(text):
