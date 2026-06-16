@@ -1,0 +1,83 @@
+# evidence-first-rag
+
+> A small, portable **hybrid retrieval engine + evaluation harness** — and the
+> measurement discipline that keeps it honest. Extracted from a personal AI-assistant
+> memory index and decoupled from any specific tool, so it runs anywhere on any
+> source tree.
+
+**Status:** working · stable · single-author personal tooling, published for the
+*methodology*. The interesting part isn't the retriever — it's how you tell whether
+a change to it helped, when you have **no labeled data and no users to A/B against**.
+
+---
+
+## Why this exists
+
+Building RAG is easy; *knowing whether a change made it better or worse* is the hard
+part. With a small corpus and a single user you have none of the production crutches —
+no click logs, no A/B traffic, no annotation budget. This repo is one answer: treat
+retrieval quality as a **measurable, regression-gated property**, like a test suite,
+and be ruthlessly honest about what the numbers do and don't prove.
+
+## Quickstart (reproducible in ~10 seconds)
+
+```bash
+pip install sentence-transformers rank-bm25 numpy
+
+# Index this repo into a local ./.rag-index/ (the tool indexes itself)
+RAG_SOURCE_ROOTS="$PWD" python ragcore/build.py
+
+# Ask it something
+RAG_SOURCE_ROOTS="$PWD" python ragcore/query.py --scope code "how does the reranker fall back"
+
+# Run the eval gate
+RAG_RERANK_AUTO=off python eval/run.py --label demo
+```
+
+That eval indexes the repo's own source and scores 12 golden cases against it — so
+**you can reproduce the number below yourself**, no private data required.
+
+## Results (honest, self-indexed demo)
+
+| Metric | Value |
+|---|---|
+| Hit@5 (code scope, pure hybrid) | **0.833** |
+| Hit@1 | 0.833 |
+| MRR | 0.833 |
+| Corpus | this repo (10 code files → 40 chunks) |
+
+10 of 12 cases hit at rank 1; the 2 misses are left in on purpose (a couple of
+`config.py` queries lose to `build.py`). Inflating a benchmark by quietly dropping
+the cases it fails is the first thing this project refuses to do — see
+[DECISIONS.md](./DECISIONS.md).
+
+## How it works
+
+- **Hybrid retrieval** — dense embeddings (`intfloat/multilingual-e5-small`) + lexical
+  BM25, fused with Reciprocal Rank Fusion. A code-aware tokenizer splits identifiers
+  into `camelCase`/`snake_case` subtokens so "create player" matches `createPlayer`.
+- **Selective reranking** (optional) — a cross-encoder reranker that, when enabled, is
+  scoped to code-scope queries only (it was measured to *help* code and *regress*
+  prose), with graceful fallback to the fused ranking if the model isn't present.
+- **Language-aware chunking** — Python by AST symbol, TS/JS/Shell by regex, with a
+  word-count fallback.
+- **Config by env var** — zero-setup defaults (`RAG_*`); see [`ragcore/config.py`](./ragcore/config.py).
+- **Eval** — `eval/run.py` reports Hit@K/MRR; `eval/check.sh` gates a run against a
+  frozen baseline.
+
+## What this is NOT
+
+- **Not a framework or a product** — no plugin API, no hosted service. The value is
+  the approach; fork the harness, not the wiring.
+- **Not state-of-the-art retrieval research** — a pragmatic single-user system that
+  knows its own ceiling and stops there.
+
+## Extending
+
+The core indexes code + docs + commits and nothing else, on purpose. Tool-specific
+sources (assistant transcripts, code-graphs, other memory stores) plug in as opt-in
+adapters — see [`adapters/README.md`](./adapters/README.md).
+
+## License
+
+MIT — see [LICENSE](./LICENSE). Use the methodology freely.

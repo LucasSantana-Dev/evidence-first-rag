@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "evidence-first-rag"
+version = "0.1.0"
+description = "Portable hybrid (BM25 + dense + RRF) retrieval engine and a label-free evaluation harness."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Lucas Santana" }]
+requires-python = ">=3.10"
+keywords = ["rag", "retrieval", "bm25", "reranking", "evaluation", "search"]
+dependencies = [
+    "sentence-transformers>=2.2",
+    "rank-bm25>=0.2",
+    "numpy>=1.24",
+]
+
+[project.scripts]
+rag-query = "ragcore.query:main"
+rag-build = "ragcore.build:main"
+
+[tool.setuptools]
+packages = ["ragcore"]

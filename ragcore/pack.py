@@ -5,9 +5,9 @@ Input:   task description (positional) + optional --files <paths> (e.g. git diff
 Output:  a Markdown bundle on stdout, capped at --budget tokens (~4 chars/token).
 
 Usage:
-  pack.py "fix discord notifications in watchdog"
-  pack.py --files scripts/maintenance/homelab-watchdog.sh "add retry logic"
-  pack.py --budget 3000 "refactor internalNotify route"
+  pack.py "add retry logic to the indexer"
+  pack.py --files ragcore/retrieval.py "explain the fusion step"
+  pack.py --budget 3000 "where are config defaults set"
 """
 from __future__ import annotations
 

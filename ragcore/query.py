@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Query ~/.claude/rag-index/index.sqlite with hybrid BM25 + cosine retrieval.
+"""Query the local index (config.DB) with hybrid BM25 + cosine retrieval.
 
-Auto-scopes to the current repo when invoked from ~/Desenvolvimento/<repo>/...
-unless `--scope-repo all` is passed. `--scope` still filters by source_type.
+Auto-scopes to the current source root when invoked from inside one, unless
+`--scope-repo all` is passed. `--scope` filters by source_type.
 
 Examples:
-  query.py "how does send_discord work"
-  query.py --top 8 --scope code,plans "FTLCONF listening mode"
-  query.py --scope-repo Lucky "internal notify endpoint"
+  query.py "how does the reranker fall back"
+  query.py --top 8 --scope code "reciprocal rank fusion"
+  query.py --scope-repo all "config defaults"
   query.py --format json "..."
 """
 from __future__ import annotations

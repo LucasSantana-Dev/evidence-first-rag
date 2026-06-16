@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Evaluate RAG retrieval quality against a curated Q/A dataset.
+"""Evaluate retrieval quality against a curated Q/A dataset.
 
-Inputs:  eval/dataset.jsonl  (one JSON per line: query, expect_path_contains, expect_scope)
+Inputs:  eval/golden.demo.jsonl  (one JSON per line: query, expect_path_contains, expect_scope)
 Outputs: MRR, Hit@1, Hit@3, Hit@5 — prints table + writes eval/<label>.json
 
 Usage:
-  eval/run.py                         # runs baseline, writes eval/baseline.json
+  eval/run.py                         # scores the demo golden set
   eval/run.py --label post-reranker   # save as named run
   eval/run.py --top 10 --label wider
 """

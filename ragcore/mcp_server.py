@@ -15,14 +15,12 @@ from retrieval import search
 TOOL_SCHEMA = {
     "name": "rag_query",
     "description": (
-        "Hybrid semantic + BM25 search over the user's personal corpus: memory, "
-        "plans, handoffs, skill definitions, codex rules, curated repo docs + "
-        "README + CHANGELOG, recent git commits, session transcripts, and source "
-        "code (TS/JS/Python/Shell) from the curated repos (Lucky, homelab, "
-        "Craftvaria, ai-dev-toolkit, ai-dev-toolkit-setup). Returns top-K chunks "
-        "with path:line + symbol + repo citations. Auto-scopes to the current "
-        "repo when cwd is inside one — pass scope_repos=['all'] to disable. "
-        "Use instead of grep for fuzzy or cross-file recall."
+        "Hybrid semantic + BM25 search over the indexed corpus: source code "
+        "(Python/TS/JS/Shell), markdown docs (README, CHANGELOG, docs/**), and "
+        "recent git commits across the configured source roots. Returns top-K "
+        "chunks with path:line + symbol + repo citations. Auto-scopes to the "
+        "current source root when cwd is inside one — pass scope_repos=['all'] "
+        "to disable. Use instead of grep for fuzzy or cross-file recall."
     ),
     "inputSchema": {
         "type": "object",
@@ -32,12 +30,12 @@ TOOL_SCHEMA = {
             "scope_types": {
                 "type": "array",
                 "items": {"type": "string"},
-                "description": "source types: memory, plans, handoffs, skills, standards, codex, codex-rules, changelog, repo-docs, repo-readme, spec, roadmap, code, workstation-code, commit, session",
+                "description": "source types: code, repo-docs, repo-readme, changelog, spec, roadmap, commit",
             },
             "scope_repos": {
                 "type": "array",
                 "items": {"type": "string"},
-                "description": "repo names (Lucky, homelab, Craftvaria, ai-dev-toolkit, ai-dev-toolkit-setup) or pass ['all'] to disable cwd auto-scoping",
+                "description": "source-root names to filter by, or pass ['all'] to disable cwd auto-scoping",
             },
             "cwd": {"type": "string", "description": "working dir to drive auto-scoping (defaults to server cwd)"},
         },
