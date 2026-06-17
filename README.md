@@ -1,5 +1,7 @@
 # evidence-first-rag
 
+[![eval-gate (advisory)](https://github.com/LucasSantana-Dev/evidence-first-rag/actions/workflows/eval.yml/badge.svg)](https://github.com/LucasSantana-Dev/evidence-first-rag/actions/workflows/eval.yml)
+
 > A small, portable **hybrid retrieval engine + evaluation harness** — and the
 > measurement discipline that keeps it honest. Extracted from a personal AI-assistant
 > memory index and decoupled from any specific tool, so it runs anywhere on any
@@ -41,15 +43,21 @@ That eval indexes the repo's own source and scores 12 golden cases against it �
 
 | Metric | Value |
 |---|---|
-| Hit@5 (code scope, pure hybrid) | **0.833** |
-| Hit@1 | 0.833 |
-| MRR | 0.833 |
-| Corpus | this repo (10 code files → 40 chunks) |
+| **Hit@5** (code scope, pure hybrid) — *the regression-gated headline* | **0.833** |
+| Hit@1 | 0.75 |
+| MRR | 0.792 |
+| Corpus | this repo, self-indexed (12 code files → 46 chunks) |
 
-10 of 12 cases hit at rank 1; the 2 misses are left in on purpose (a couple of
+9 of 12 cases hit at rank 1; the misses are left in on purpose (a couple of
 `config.py` queries lose to `build.py`). Inflating a benchmark by quietly dropping
 the cases it fails is the first thing this project refuses to do — see
 [DECISIONS.md](./DECISIONS.md).
+
+Because the demo indexes **this repo itself**, the corpus grows as the repo does, so
+the exact counts and Hit@1 drift over time — adding a file can demote a borderline
+case. That's why **Hit@5 is the number under regression gate** (`eval/check.sh`, ±5pp);
+it has held at 0.833 across these additions. The drift is the honest behavior of a
+self-indexing benchmark, not noise swept under a frozen number.
 
 ## How it works
 
@@ -73,7 +81,12 @@ the cases it fails is the first thing this project refuses to do — see
   knows its own ceiling and stops there.
 - **Not a maintained project** — a solo operator's personal tool, shared for the
   methodology. Issues and PRs are welcome but may not be triaged; expect best-effort,
-  no SLA.
+  no SLA. The eval workflow is an *advisory* gate (it proves the numbers reproduce), not
+  a support promise.
+
+Other conventional repo furniture — `CONTRIBUTING`, issue templates, a badge wall — is
+**deliberately** omitted, not unfinished. [DECISIONS.md](./DECISIONS.md) records what's
+left out on purpose and the trigger that would reopen each.
 
 ## Extending
 

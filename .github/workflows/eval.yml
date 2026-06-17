@@ -1,0 +1,30 @@
+# Advisory eval gate.
+#
+# This repo is a solo, no-SLA personal tool (see README → "What this is NOT").
+# This workflow does NOT change that — it exists so the "regression-gated quality"
+# claim is *practiced, not just preached*: every push/PR re-runs the honesty eval
+# against the frozen baseline and proves the demo still reproduces. It is advisory.
+name: eval-gate (advisory)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history so commit indexing is reproducible
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install the three deps the README quickstart lists
+        run: pip install -r requirements.txt
+      - name: Eval gate — auto-builds the index, compares Hit@K to the frozen baseline (±5pp)
+        run: bash eval/check.sh ci
+      - name: Determinism gate — same query must yield the same top-K ordering
+        run: RAG_SOURCE_ROOTS="$PWD" python eval/test_determinism.py
