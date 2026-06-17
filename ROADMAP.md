@@ -1,0 +1,87 @@
+# Open directions — candidate experiments, not commitments
+
+This is **not** a product roadmap. It's a list of directions that could improve the
+retriever or the harness, written down so the reasoning is visible. Consistent with the
+rest of this repo, none of them ship on enthusiasm: each is gated on a **measured
+before/after** on the reproducible demo corpus, and each names the bar it has to clear
+to earn a place in the core. Most will probably stay candidates — that's the point.
+
+The discipline is the same one in [DECISIONS.md](./DECISIONS.md): *measure → challenge →
+decide → record the trigger that would reopen it.* These are the "challenge" stage, in
+public.
+
+---
+
+## 1. Comparative benchmark vs. named baselines
+
+Today the demo reports a single number (Hit@5 0.833, self-indexed). A single number
+tells you the system works; it doesn't tell you the hybrid+RRF design is *earning its
+complexity*. The experiment: run the same reproducible demo eval against
+
+- **BM25 only** (drop the dense half),
+- a **late-interaction / token-level** retriever (e.g. a ColBERT-style scorer),
+- an **off-the-shelf framework's default** RAG pipeline,
+
+and publish the honest delta — including any scope where the simpler baseline wins.
+
+**Bar to ship:** the comparison is the deliverable; it ships regardless of outcome. If
+BM25-only ties the hybrid on this corpus, that finding is *more* valuable than a number
+that flatters the design.
+
+## 2. Contextual chunk prefixing (measured, not assumed)
+
+Code retrieval's hardest failure is vocabulary mismatch: a natural-language query shares
+almost no tokens with an implementation. One candidate fix is to prepend a short,
+generated or structured **context line** to each chunk before embedding (file/symbol
+role, surrounding scope), so the embedding sees the context the raw lines omit.
+
+**Bar to ship:** measurably improves code-scope Hit@5 on the demo set **without
+regressing prose** — the same selective standard the cross-encoder reranker already has
+to meet. If it helps code but hurts prose, it stays opt-in or stays out.
+
+## 3. Run the eval as tracked experiments (measurement, not model)
+
+The harness currently compares runs by diffing JSON files. An **opt-in adapter** could
+push the eval set and its Hit@K/MRR scores into an experiment-tracking tool (e.g.
+[Langfuse](https://langfuse.com) Datasets/Experiments), so before/after comparisons are
+versioned and drillable instead of hand-diffed.
+
+This is squarely on-thesis — *improve the measurement, not the model.* Scope is
+**eval-first**: tracking offline eval campaigns, not instrumenting live queries. Stays
+an adapter, never a core dependency, in keeping with [What this is NOT](./README.md).
+
+## 4. Stratified (per-intent) measurement
+
+The aggregate Hit@K hides *where* the system is weak. The experiment: classify eval
+queries by type — exact-symbol lookup, "who calls X", prose recall, config search — and
+report the metric **per class**. No model change; pure visibility. A stratified score is
+the prerequisite for honestly judging every other item on this list, because "it got
+better" means nothing until you know *which queries* got better.
+
+## 5. Reranker tradeoff table
+
+The optional cross-encoder reranker is one specific model today. A small **Pareto study**
+across a few rerankers — quality vs. latency vs. memory footprint — would let a forker
+pick one for their resource budget, instead of inheriting one tuned for a 16 GB laptop.
+
+**Bar to ship:** a reproducible comparison table; the default only changes if a
+candidate is strictly better on the demo within a stated latency budget.
+
+---
+
+## Deliberately *not* on this list
+
+To save anyone the suggestion — these were considered and declined, with reasons in
+[DECISIONS.md](./DECISIONS.md):
+
+- **Training a learned ranker / fine-tuning embeddings** — a curated eval is ~100 cases;
+  learned ranking wants orders of magnitude more *real* labels. Reopen trigger is
+  recorded in DECISIONS.md, and it isn't met.
+- **Graph-aware retrieval / vendor-coupled sources** — removed from the core on purpose
+  to keep it a portable superset that indexes any tree with three dependencies.
+- **A plugin framework, hosted service, or examples gallery** — this is published for
+  the methodology, not as a product; growth in surface area is a cost, not a goal.
+
+Each item here ships only if a measurement says it should, and gets recorded in
+DECISIONS.md with the condition that would reopen it. Until then they're exactly what
+this file says they are: candidates.

@@ -81,6 +81,11 @@ The core indexes code + docs + commits and nothing else, on purpose. Tool-specif
 sources (assistant transcripts, code-graphs, other memory stores) plug in as opt-in
 adapters — see [`adapters/README.md`](./adapters/README.md).
 
+## Where this could go
+
+Candidate experiments — each gated on a measured win, none promised — are written up in
+[ROADMAP.md](./ROADMAP.md). They're directions, not commitments.
+
 ## License
 
 MIT — see [LICENSE](./LICENSE). Use the methodology freely.
