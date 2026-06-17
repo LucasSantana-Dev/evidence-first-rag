@@ -93,12 +93,27 @@ def classify(case: dict, corpus: list[tuple[str, str]]) -> str:
     return "ok"
 
 
+def resolve_dataset(arg: str) -> Path:
+    """Resolve --dataset robustly: absolute as-is; otherwise try cwd-relative (standard
+    CLI behavior) and then repo-root-relative, so the tool works whether you run it from
+    inside the repo or from elsewhere. Errors clearly, naming both paths tried."""
+    p = Path(arg)
+    if p.is_absolute():
+        return p
+    candidates = [Path.cwd() / arg, ROOT / arg]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    sys.exit("dataset not found — tried " + " and ".join(str(c) for c in candidates))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--dataset", default=str(DEFAULT_DATASET), help="eval jsonl to audit")
+    ap.add_argument("--dataset", default=str(DEFAULT_DATASET),
+                    help="eval jsonl to audit (absolute, or relative to cwd or repo root)")
     args = ap.parse_args()
 
-    dataset = Path(args.dataset)
+    dataset = resolve_dataset(args.dataset)
     cases = load_cases(dataset)
     if not cases:
         sys.exit(f"no usable cases in {dataset}")
