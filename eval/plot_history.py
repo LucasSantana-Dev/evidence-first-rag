@@ -83,7 +83,8 @@ def hit5_at(sha: str) -> float | None:
             out = wt / "eval" / "hist.json"
             if not out.exists():
                 return None
-            return float(json.loads(out.read_text()).get("hit@5"))
+            h5 = json.loads(out.read_text()).get("hit@5")
+            return float(h5) if h5 is not None else None  # skip (don't crash) on a malformed run
         finally:
             git("worktree", "remove", "--force", str(wt))
 
