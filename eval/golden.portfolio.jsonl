@@ -1,0 +1,15 @@
+{"query": "Landing page hero section with animated terminal and live project list", "expect_path_contains": "Hero.tsx", "expect_scope": "code", "intent": "ui"}
+{"query": "Render a vertical timeline of work experience with company logos and achievements", "expect_path_contains": "ExperienceTimeline.tsx", "expect_scope": "code", "intent": "ui"}
+{"query": "Display featured projects in a responsive grid or card layout", "expect_path_contains": "FeaturedProjects.tsx", "expect_scope": "code", "intent": "ui"}
+{"query": "Navigation bar component with site-wide menu and scroll detection", "expect_path_contains": "NavBar.tsx", "expect_scope": "code", "intent": "ui"}
+{"query": "Footer section with contact links and site metadata", "expect_path_contains": "SiteFooter.tsx", "expect_scope": "code", "intent": "ui"}
+{"query": "Reusable reveal animation for elements entering the viewport with fade and slide", "expect_path_contains": "Reveal.tsx", "expect_scope": "code", "intent": "animation"}
+{"query": "GSAP heading animation library with preset configurations", "expect_path_contains": "GsapHeading.tsx", "expect_scope": "code", "intent": "animation"}
+{"query": "Scroll progress indicator showing read position on the page", "expect_path_contains": "ScrollProgress.tsx", "expect_scope": "code", "intent": "ui"}
+{"query": "Animation preset functions with reduced motion accessibility support", "expect_path_contains": "animation.ts", "expect_scope": "code", "intent": "animation"}
+{"query": "Skills section with interactive map or visual representation of expertise", "expect_path_contains": "SkillsSection.tsx", "expect_scope": "code", "intent": "ui"}
+{"query": "About section describing personal background and identity", "expect_path_contains": "AboutIdentity.tsx", "expect_scope": "code", "intent": "ui"}
+{"query": "Contact CTA button and email subscription form", "expect_path_contains": "ContactCta.tsx", "expect_scope": "code", "intent": "ui"}
+{"query": "Contact section with messaging form or inquiry interface", "expect_path_contains": "ContactSection.tsx", "expect_scope": "code", "intent": "ui"}
+{"query": "Deferred or lazy-loaded section component for performance optimization", "expect_path_contains": "DeferredSection.tsx", "expect_scope": "code", "intent": "ui"}
+{"query": "Type definitions for page content including experience and project data", "expect_path_contains": "types/content", "expect_scope": "code", "intent": "types"}

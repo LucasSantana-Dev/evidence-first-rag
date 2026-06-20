@@ -1,0 +1,20 @@
+{"query": "Modern Python CLI for homelab management with Typer app framework", "expect_path_contains": "__init__.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Main entry point to launch the homelab manager application", "expect_path_contains": "__main__.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Per-IP rate limiter using sliding window for API requests", "expect_path_contains": "app.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Manages backup and restore operations for containerized services", "expect_path_contains": "backup_manager.py", "expect_scope": "code", "intent": "operations"}
+{"query": "Execute all steps in a command sequence with rollback on failure", "expect_path_contains": "command_sequence.py", "expect_scope": "code", "intent": "operations"}
+{"query": "Create the main Typer CLI app with all management commands", "expect_path_contains": "commands.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Thin wrapper over docker compose command-line invocations", "expect_path_contains": "compose_cli.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Configuration management for homelab including paths and service definitions", "expect_path_contains": "config.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Aggregate manager that delegates to specialized container managers", "expect_path_contains": "containers.py", "expect_scope": "code", "intent": "operations"}
+{"query": "Manages deployment and service restart operations", "expect_path_contains": "deployment.py", "expect_scope": "code", "intent": "operations"}
+{"query": "Lazy singleton accessor for the Docker SDK Python client", "expect_path_contains": "docker_client.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Return a safe-to-echo description of a subprocess failure", "expect_path_contains": "errors.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Monitor health of homelab services and containers", "expect_path_contains": "health.py", "expect_scope": "code", "intent": "operations"}
+{"query": "Return the trace id active in the current logging context", "expect_path_contains": "log.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Register all management and deployment commands with the Typer app", "expect_path_contains": "management_commands.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Route handlers for homelab_manager HTTP API", "expect_path_contains": "routes.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Category definition for grouping related homelab services", "expect_path_contains": "service.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Manages container status, health checks, and log retrieval", "expect_path_contains": "status.py", "expect_scope": "code", "intent": "operations"}
+{"query": "Register all status and diagnostic commands with the Typer CLI", "expect_path_contains": "status_commands.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Manage updates for homelab services and containers", "expect_path_contains": "updates.py", "expect_scope": "code", "intent": "operations"}

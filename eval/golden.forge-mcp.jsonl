@@ -1,0 +1,20 @@
+{"query": "Raised when RBAC check fails", "expect_path_contains": "authorization.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Raised when JWT validation fails", "expect_path_contains": "auth.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Validate that the caller has ``AUDIT_READ`` permission", "expect_path_contains": "audit.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Centralized cache management with metrics and cleanup", "expect_path_contains": "cache_manager.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Raised when circuit is open and requests are being rejected", "expect_path_contains": "circuit_breaker.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Gateway connection configuration", "expect_path_contains": "config.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "FastAPI dependencies for JWT authentication and security context", "expect_path_contains": "dependencies.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Configuration for rate limiting", "expect_path_contains": "enhanced_rate_limiter.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Health check status values", "expect_path_contains": "health.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "MCP transport over HTTP for remote spokes", "expect_path_contains": "http_adapter.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Helper to send requests to the gateway", "expect_path_contains": "index.ts", "expect_scope": "code", "intent": "indexing"}
+{"query": "Formatter that outputs structured log messages", "expect_path_contains": "logger.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Single metric value with timestamp", "expect_path_contains": "metrics.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Security context propagated to spoke MCP servers", "expect_path_contains": "client.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Make HTTP request with retry logic for transient failures", "expect_path_contains": "gateway_client.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Real-time cache performance metrics", "expect_path_contains": "dashboard.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Status of knowledge items", "expect_path_contains": "knowledge_base.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Extract tokens from string, including single-char tokens for better matching", "expect_path_contains": "matcher.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "A single feedback record for a tool selection", "expect_path_contains": "feedback.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Training-related metrics for specialist performance", "expect_path_contains": "enhanced_specialist_coordinator.py", "expect_scope": "code", "intent": "infrastructure"}

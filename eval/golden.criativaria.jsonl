@@ -1,0 +1,27 @@
+{"query": "Only the production deploy is indexable. Vercel preview deploys (VERCEL_ENV", "expect_path_contains": "robots.ts", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "metadataBase resolves relative canonical/og URLs from buildMetadata into", "expect_path_contains": "layout.tsx", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Home keeps the Astro title verbatim (no \" \u00b7 Criativaria\" suffix).", "expect_path_contains": "page.tsx", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Loads all guias from threads/<slug>/index.md", "expect_path_contains": "repository.ts", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Dynamic import for shikijs rehype (ESM issue mitigation). Typed via the", "expect_path_contains": "markdown.ts", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Pure function: determine if a guide, curso, or roadmap is visible", "expect_path_contains": "publish-gate.ts", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Content blocks that cascade in on scroll (titles are intentionally excluded to", "expect_path_contains": "SiteEffects.tsx", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Links marked with .video-link[data-embed] open the embed here in a lightbox", "expect_path_contains": "VideoLightbox.tsx", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Motion island: ScrollReveal", "expect_path_contains": "ScrollReveal.tsx", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Live \"online now\" badge for the Criativaria Discord, read from the public", "expect_path_contains": "CommunityPresence.tsx", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Site footer server component", "expect_path_contains": "Footer.tsx", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Interactive generic picker (ADR-0012, P3 \"choose your path\")", "expect_path_contains": "Picker.tsx", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Site header server component", "expect_path_contains": "Header.tsx", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Community Bridge callout \u2014 promotes Discord community", "expect_path_contains": "CommunityBridge.tsx", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "SystemChrome \u2014 brand \"chrome as language\": monospace corner metadata framed by", "expect_path_contains": "SystemChrome.tsx", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "KineticTitle \u2014 page-head heading that reveals char-by-char in Departure Mono (the", "expect_path_contains": "KineticTitle.tsx", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Three.js retro arcade starfield: pixel-art stars with depth layering, smooth parallax,", "expect_path_contains": "HeroScene.tsx", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "GSAP coreography: build and play timeline", "expect_path_contains": "LandingIntro.tsx", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Interactive \"picker\" data (ADR-0012, P3 \"choose your path\")", "expect_path_contains": "pickers.ts", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Load taxonomy once and cache it for synchronous lookups", "expect_path_contains": "taxonomy-cache.ts", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Members currently online in the guild (Discord widget `presence_count`)", "expect_path_contains": "community.ts", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Site configuration \u2014 ported from ../src/lib/site.ts (Astro)", "expect_path_contains": "site.ts", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Constantes de n\u00edvel, em um s\u00f3 lugar (evita duplicar entre p\u00e1ginas).", "expect_path_contains": "constants.ts", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "SEO/metadata builder (deep, small, pure). Single source of truth for", "expect_path_contains": "seo.ts", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Cada .row deve ter: data-title, data-desc (em min\u00fasculo, p/ busca), os data-* das facetas", "expect_path_contains": "listFilter.ts", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "rehype-accordion (ADR-0012, A1 progressive enhancement):", "expect_path_contains": "rehype-accordion.mjs", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Client-side script for localStorage persistence of checklist state", "expect_path_contains": "RoadmapScript.tsx", "expect_scope": "code", "intent": "infrastructure"}
