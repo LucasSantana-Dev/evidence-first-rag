@@ -1,0 +1,20 @@
+{"query": "Parse Claude Code conversation JSONL files and extract quality sessions", "expect_path_contains": "capture-training.py", "expect_scope": "code", "intent": "ai-dev"}
+{"query": "Flatten Anthropic content blocks to plain text for training data export", "expect_path_contains": "capture-training.py", "expect_scope": "code", "intent": "ai-dev"}
+{"query": "Parse unified diff output to extract file paths and changed line ranges", "expect_path_contains": "diff_pack.py", "expect_scope": "code", "intent": "diff-analysis"}
+{"query": "Change-scoped context retrieval: given a git diff, return relevant code chunks", "expect_path_contains": "diff_pack.py", "expect_scope": "code", "intent": "diff-analysis"}
+{"query": "Find symbol definitions that overlap with changed lines in a diff", "expect_path_contains": "diff_pack.py", "expect_scope": "code", "intent": "diff-analysis"}
+{"query": "Build a task-aware context pack from relevant code, standards, and past decisions", "expect_path_contains": "pack.py", "expect_scope": "code", "intent": "diff-analysis"}
+{"query": "Index curated repos into a local rag-index sqlite database with embeddings", "expect_path_contains": "build.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Load curated repos from RAG_REPOS environment variable or .forge-kit.env file", "expect_path_contains": "build.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Aggregate all curated repos docs and specs into a single per-user roadmap view", "expect_path_contains": "aggregate_roadmap.py", "expect_scope": "code", "intent": "ai-dev"}
+{"query": "Hybrid BM25 and cosine retrieval from the local rag-index sqlite database", "expect_path_contains": "query.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Language-aware source code chunking by function and class boundaries", "expect_path_contains": "chunkers.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Word-count sliding window chunker for non-code or unrecognized file content", "expect_path_contains": "chunkers.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Reciprocal Rank Fusion combining BM25 and cosine similarity for hybrid retrieval", "expect_path_contains": "retrieval.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Weekly RAG observability report listing zero-hit queries and stale index chunks", "expect_path_contains": "report.py", "expect_scope": "code", "intent": "ai-dev"}
+{"query": "MCP stdio server exposing rag_query tool over the hybrid retrieval index", "expect_path_contains": "mcp_server.py", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "DangerJS rule: Terraform plan output must not be committed to the repository", "expect_path_contains": "dangerfile.bash-iac.ts", "expect_scope": "code", "intent": "review"}
+{"query": "DangerJS bash and IaC dangerfile shell script linting hint for CI checks", "expect_path_contains": "dangerfile.bash-iac.ts", "expect_scope": "code", "intent": "review"}
+{"query": "DangerJS rule flagging a source file change without a corresponding test change", "expect_path_contains": "dangerfile.ts-monorepo.ts", "expect_scope": "code", "intent": "review"}
+{"query": "Opencode plugin for priority-based task backlog management with concurrent session cap", "expect_path_contains": "orchestrator.ts", "expect_scope": "code", "intent": "orchestration"}
+{"query": "Save and restore per-task context summaries between autopilot orchestration sessions", "expect_path_contains": "index.ts", "expect_scope": "code", "intent": "orchestration"}

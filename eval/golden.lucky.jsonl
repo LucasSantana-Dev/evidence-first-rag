@@ -1,0 +1,21 @@
+{"query": "An inbound id is attacker-controllable and gets logged, so it is only used for tracing", "expect_path_contains": "requestId.ts", "expect_scope": "code", "intent": "security"}
+{"query": "express-session store backed by Postgres via the app's Prisma client", "expect_path_contains": "prismaSessionStore.ts", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Express middleware that records request count and duration to the Prometheus registry", "expect_path_contains": "metrics.ts", "expect_scope": "code", "intent": "monitoring"}
+{"query": "Per-request correlation id, assigned by the requestId middleware", "expect_path_contains": "express.d.ts", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Popular artist names used as fallback for artist suggestions", "expect_path_contains": "popularArtists.ts", "expect_scope": "code", "intent": "domain"}
+{"query": "Shared Prometheus registry for the backend. Mounted at GET /metrics", "expect_path_contains": "prometheus.ts", "expect_scope": "code", "intent": "monitoring"}
+{"query": "Counter: total HTTP requests served, labelled by method, route template", "expect_path_contains": "prometheus.ts", "expect_scope": "code", "intent": "monitoring"}
+{"query": "Histogram: HTTP request duration in seconds, buckets tuned for typical web latency", "expect_path_contains": "prometheus.ts", "expect_scope": "code", "intent": "monitoring"}
+{"query": "Narrow check for Prisma's unique-constraint violation (P2002) without importing Prisma", "expect_path_contains": "prismaErrors.ts", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Exported for test isolation (resetting the in-memory suggestion caches)", "expect_path_contains": "artists.ts", "expect_scope": "code", "intent": "domain"}
+{"query": "Vote window: top.gg allows one upvote every 12 hours", "expect_path_contains": "webhooks.ts", "expect_scope": "code", "intent": "integration"}
+{"query": "Records a Guild Automation usage attempt (per-guild, non-PII): increments the usage counter", "expect_path_contains": "guildAutomation.ts", "expect_scope": "code", "intent": "domain"}
+{"query": "CSP reports are low-volume on legitimate page loads; cap hard to keep an inexpensive attack surface", "expect_path_contains": "security.ts", "expect_scope": "code", "intent": "security"}
+{"query": "document-uri carries the full page URL; its query string can hold tokens or PII", "expect_path_contains": "security.ts", "expect_scope": "code", "intent": "security"}
+{"query": "Browsers POST violations as application/csp-report (legacy report-uri) or application/reports+json", "expect_path_contains": "security.ts", "expect_scope": "code", "intent": "security"}
+{"query": "reusable utility for validating Discord Snowflake ID format", "expect_path_contains": "support.ts", "expect_scope": "code", "intent": "integration"}
+{"query": "Configure multer for single file uploads with 5MB size limit", "expect_path_contains": "support.ts", "expect_scope": "code", "intent": "infrastructure"}
+{"query": "Service to fetch artist suggestions through a three-tier lookup strategy", "expect_path_contains": "artistSuggestion.ts", "expect_scope": "code", "intent": "domain"}
+{"query": "Configuration for ArtistSuggestionService caching behavior", "expect_path_contains": "artistSuggestion.ts", "expect_scope": "code", "intent": "domain"}
+{"query": "Parse a Discord Retry-After header (seconds) into a bounded backoff in milliseconds", "expect_path_contains": "DiscordOAuthService.ts", "expect_scope": "code", "intent": "integration"}
+{"query": "Degrade music CONTROLS to 503 while the Redis pub/sub bridge is down", "expect_path_contains": "index.ts", "expect_scope": "code", "intent": "infrastructure"}
