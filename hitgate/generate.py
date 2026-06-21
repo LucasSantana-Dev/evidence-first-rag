@@ -36,12 +36,9 @@ import urllib.request
 from pathlib import Path
 from typing import Optional
 
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "ragcore"))
-
-from build import is_excluded_path, iter_code_sources  # noqa: E402
-from chunkers import chunk_file  # noqa: E402
-from config import CODE_EXTS, MAX_FILE_BYTES, SOURCE_ROOTS  # noqa: E402
+from ragcore.build import is_excluded_path, iter_code_sources
+from ragcore.chunkers import chunk_file
+from ragcore.config import CODE_EXTS, MAX_FILE_BYTES, SOURCE_ROOTS
 
 # ── query helpers ────────────────────────────────────────────────────────────
 

@@ -20,10 +20,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
-from ragcore.retrieval import search  # noqa: E402
+from ragcore.retrieval import search
 
-DATASET = ROOT / "eval" / "golden.demo.jsonl"
+DATASET = ROOT / "hitgate" / "golden.demo.jsonl"
 TOP = 5
 RUNS = 2
 

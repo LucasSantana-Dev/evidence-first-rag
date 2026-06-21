@@ -31,10 +31,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
-from ragcore.config import DB  # honors RAG_INDEX_DIR  # noqa: E402
+from ragcore.config import DB  # honors RAG_INDEX_DIR
 
-DEFAULT_DATASET = ROOT / "eval" / "golden.demo.jsonl"
+DEFAULT_DATASET = ROOT / "hitgate" / "golden.demo.jsonl"
 
 
 def _expected_substrings(case: dict) -> list[str]:

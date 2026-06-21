@@ -31,8 +31,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
-EVAL_REL = "eval/run.py"
-GOLDEN_REL = "eval/golden.demo.jsonl"
+EVAL_REL = "hitgate/run.py"
+GOLDEN_REL = "hitgate/golden.demo.jsonl"
 
 
 def git(*args: str, cwd: Path | None = None) -> str:
@@ -75,12 +75,12 @@ def hit5_at(sha: str) -> float | None:
             if r.returncode != 0:
                 return None
             r = subprocess.run(
-                [sys.executable, EVAL_REL, "--label", "hist"], cwd=str(wt), env=env,
+                [sys.executable, "-m", "hitgate.run", "--label", "hist"], cwd=str(wt), env=env,
                 capture_output=True, text=True,
             )
             if r.returncode != 0:
                 return None
-            out = wt / "eval" / "hist.json"
+            out = wt / "hitgate" / "hist.json"
             if not out.exists():
                 return None
             h5 = json.loads(out.read_text()).get("hit@5")
