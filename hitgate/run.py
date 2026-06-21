@@ -9,15 +9,15 @@ own retriever, not just the bundled one. A retriever is any callable
 returning results ranked best-first, each a mapping with at least a "path" key (and
 optionally "start_line"). Rank is assigned by position, so an external retriever doesn't
 compute it. The harness scores Hit@1/@3/@5 + MRR by where the expected path first appears
-and writes eval/<label>.json.
+and writes hitgate/<label>.json.
 
-Inputs:  eval/golden.demo.jsonl  (one JSON per line: query, expect_path_contains, expect_scope)
+Inputs:  hitgate/golden.demo.jsonl  (one JSON per line: query, expect_path_contains, expect_scope)
 
 Usage:
-  python eval/run.py                                            # bundled retriever, demo set
-  python eval/run.py --label wider --top 10
-  python eval/run.py --rerank                                   # bundled + cross-encoder rerank
-  python eval/run.py --retriever mypkg.myretriever:retrieve     # YOUR retriever (see adapters/)
+  python -m hitgate.run                                            # bundled retriever, demo set
+  python -m hitgate.run --label wider --top 10
+  python -m hitgate.run --rerank                                   # bundled + cross-encoder rerank
+  python -m hitgate.run --retriever mypkg.myretriever:retrieve     # YOUR retriever (see adapters/)
 """
 from __future__ import annotations
 

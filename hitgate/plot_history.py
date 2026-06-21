@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""eval/plot_history.py — Hit@5 across git history (per-commit, self-indexed).
+"""hitgate/plot_history.py — Hit@5 across git history (per-commit, self-indexed).
 
 Walks recent commits on the current branch and, for each one that ships the eval
 harness, checks it out into a throwaway `git worktree`, indexes that commit's own
@@ -18,7 +18,7 @@ Charting needs matplotlib (optional dev dependency): `pip install -r requirement
 The eval run itself needs only the three core deps.
 
 Usage:
-  python eval/plot_history.py [--max-commits N] [--branch main]
+  python -m hitgate.plot_history [--max-commits N] [--branch main]
 """
 from __future__ import annotations
 
