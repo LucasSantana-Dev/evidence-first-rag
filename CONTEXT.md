@@ -43,7 +43,7 @@ Terms are used precisely as defined here; agents should use these when naming co
 **`hitgate/`** — the eval harness (the adoptable product).
 - **Files:** `run.py` (eval main: iterate golden cases, call `--retriever`, compute Hit@K/MRR, write JSON), `compare.py` (diff two runs, highlight deltas), `diff.py` (case-by-case comparison), `check.sh` (bash gate: threshold check, exit 1 on regression), `generate.py` (bootstrap candidates from corpus structure), `audit_contamination.py` (flag un-winnable cases), `plot_history.py` (plot metric trends), `example_external_retriever.py` (reference dumb keyword matcher).
 - **Responsibility:** load golden cases, invoke a retriever, tabulate metrics, compare runs, gate on threshold, report findings. Retriever-agnostic.
-- **Dependency shape:** dependency-free except for `generate.py`, `audit_contamination.py`, and `test_determinism.py`, which import `ragcore` (lazy; only needed when measuring the bundled retriever). `run.py`'s metric math is pure Python.
+- **Dependency shape:** dependency-free except for `generate.py`, `audit_contamination.py`, and `test_determinism.py`, which import `ragcore` (only needed when measuring the bundled retriever). `run.py`'s metric math is pure Python.
 - **Boundary:** the harness is packaged standalone and importable as `python -m hitgate.run`. To measure your own retriever, pass `--retriever module.path:callable`.
 
 ## Key Entry Points & Workflow

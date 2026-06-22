@@ -37,7 +37,7 @@ The bge-reranker-v2-m3 model is **strictly better** on measured quality:
 - Hit@1 improvement: 0.56→0.82 (+26pp absolute, +46% relative)
 - MRR improvement: 0.741→0.875 (+13.4pp absolute, +18% relative)
 - No regression on non-code scopes (Hit@5 stays at 0.96 for both models)
-- Latency cost: 194.2s vs 30.2s for 50 queries (+163.2s total, ~3.3s per query)
+- Latency cost: 194.2s vs 30.2s for 50 queries (+164.0s total, ~3.28s per query)
 
 However, **portability is a non-negotiable property of a reusable tool:**
 - The default reranker model must work on any machine with ~200MB free disk (model + dependencies).
