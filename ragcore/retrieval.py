@@ -79,11 +79,10 @@ def _auto_rerank_decision(rerank: bool, top1: float, top2: float, is_code_scope:
     """
     # Auto-trigger rerank on weak/ambiguous queries (if not explicitly disabled).
     # NOTE (2026-06-15): in bge code-rerank mode, the configured reranker (RAG_RERANK_MODEL,
-    # e.g. bge-reranker-v2-m3) is validated ONLY for code scope (ADR 0011). Letting the auto
-    # path rerank non-code scopes with it regressed memory retrieval -10.5pp (measured:
-    # memory 0.921 -> 0.816 on the live rerank=None path). So in bge mode, confine ALL
-    # reranking to code scope. In default (ms-marco) mode, auto-rerank fires on any scope as
-    # before (it was net-positive there).
+    # e.g. bge-reranker-v2-m3) is validated ONLY for code scope (ADR-0011). Applying it to
+    # non-code scopes regresses retrieval on mixed corpora (see ADR-0011 for the qualitative
+    # rationale). So in bge mode, confine ALL reranking to code scope. In default (ms-marco)
+    # mode, auto-rerank fires on any scope as before (it was net-positive there).
     auto_allowed = RERANK_AUTO and (not RAG_CODE_RERANK or is_code_scope)
     if not rerank and auto_allowed:
         if top1 < RERANK_AUTO_THRESHOLD or (top1 - top2) < RERANK_AUTO_MARGIN:
