@@ -393,6 +393,18 @@ def test_llm_queries_fenced_json_response():
     assert "identifier" in result and "paraphrase" in result
 
 
+def test_llm_queries_logs_exception_to_stderr(capsys):
+    """LLM query failures should log a WARN to stderr and return None (not silent)."""
+    import urllib.error
+    mock = MagicMock(side_effect=urllib.error.URLError("connection refused"))
+    with patch("urllib.request.urlopen", mock):
+        result = _llm_queries(**_LLM_KWARGS)
+    assert result is None
+    captured = capsys.readouterr()
+    assert "WARN: LLM query failed" in captured.err
+    assert "connection refused" in captured.err
+
+
 # ---------------------------------------------------------------------------
 # generate(llm=True) — integration path; two cases per chunk, _source=llm
 # ---------------------------------------------------------------------------

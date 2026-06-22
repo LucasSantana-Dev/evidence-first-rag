@@ -353,5 +353,5 @@ def _log_query(
         )
         conn.commit()
         conn.close()
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"WARN: query-log write failed: {e}", file=sys.stderr)
