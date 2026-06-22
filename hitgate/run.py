@@ -29,13 +29,11 @@ import time
 from pathlib import Path
 from typing import Callable, Mapping, Optional, Sequence
 
+from hitgate import Retriever
+
 ROOT = Path(__file__).resolve().parent.parent
 
 DATASET = ROOT / "hitgate" / "golden.demo.jsonl"
-
-# A retriever takes (query, top, scope) and returns results ranked best-first; each result
-# is a mapping with at least "path". Rank is assigned by position.
-Retriever = Callable[[str, int, Optional[str]], Sequence[Mapping]]
 
 
 def builtin_retriever(rerank: Optional[bool] = False) -> Retriever:
