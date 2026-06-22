@@ -5,6 +5,8 @@
 **`pip install hitgate`** installs the harness (dependency-free; measures *any* retriever via `--retriever`).
 **`pip install "hitgate[hybrid]"`** adds the bundled hybrid retriever used in the demo below.
 
+> **Note:** `hitgate` is not yet published to PyPI. For now, install from source: `pip install -e ".[hybrid]"`.
+
 > **A pytest-style regression gate for retrieval quality** — plus the small hybrid
 > retriever it was built to measure. Point it at *your* retriever and find out whether a
 > change helped or hurt, when you have **no labeled data and no users to A/B against**.
@@ -127,6 +129,8 @@ Point the gate at yours with `--retriever module.path:callable`:
 ```bash
 python -m hitgate.run --retriever mypkg.myretriever:retrieve --label mine
 ```
+
+**Security note:** `--retriever module:callable` imports and executes arbitrary Python code. Use only with modules you trust at the same level as your CI configuration.
 
 A runnable, dependency-free example — a deliberately dumb keyword matcher — is in
 [`hitgate/example_external_retriever.py`](./hitgate/example_external_retriever.py). Ecosystem
