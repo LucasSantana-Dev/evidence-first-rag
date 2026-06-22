@@ -1,4 +1,4 @@
-"""Opt-in adapter: measure a LlamaIndex retriever with the evidence-first-rag harness.
+"""Opt-in adapter: measure a LlamaIndex retriever with the hitgate harness.
 
 This file has **no hard dependency** — it duck-types the LlamaIndex interface, so it
 imports even when LlamaIndex isn't installed. It turns any LlamaIndex retriever (anything

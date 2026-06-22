@@ -14,9 +14,9 @@ keywords = ["rag", "retrieval", "evaluation", "hit@k", "mrr", "regression-gate",
 dependencies = []  # the eval harness core is dependency-free; the bundled retriever is the [hybrid] extra below
 
 [project.urls]
-Homepage = "https://github.com/LucasSantana-Dev/evidence-first-rag"
-Repository = "https://github.com/LucasSantana-Dev/evidence-first-rag"
-Methodology = "https://github.com/LucasSantana-Dev/evidence-first-rag/blob/main/docs/METHODOLOGY.md"
+Homepage = "https://github.com/LucasSantana-Dev/hitgate"
+Repository = "https://github.com/LucasSantana-Dev/hitgate"
+Methodology = "https://github.com/LucasSantana-Dev/hitgate/blob/main/docs/METHODOLOGY.md"
 
 [project.optional-dependencies]
 hybrid = [

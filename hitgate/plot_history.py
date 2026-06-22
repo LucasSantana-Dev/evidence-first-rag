@@ -128,7 +128,7 @@ def main() -> int:
     ax.set_ylabel("Hit@5 (code scope, pure hybrid)")
     ax.set_xticks(xs)
     ax.set_xticklabels([f"{p['sha']}\n{p['date']}" for p in points], rotation=45, ha="right", fontsize=7)
-    ax.set_title("evidence-first-rag — Hit@5 per commit (self-indexed, per-commit-native eval)")
+    ax.set_title("hitgate — Hit@5 per commit (self-indexed, per-commit-native eval)")
     ax.grid(True, axis="y", alpha=0.3)
     ax.text(
         0.0, -0.42,

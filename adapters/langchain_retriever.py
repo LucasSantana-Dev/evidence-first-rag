@@ -1,4 +1,4 @@
-"""Opt-in adapter: measure a LangChain retriever with the evidence-first-rag harness.
+"""Opt-in adapter: measure a LangChain retriever with the hitgate harness.
 
 This file has **no hard dependency** — it duck-types the LangChain interface, so it imports
 even when LangChain isn't installed. It turns any LangChain retriever (anything exposing

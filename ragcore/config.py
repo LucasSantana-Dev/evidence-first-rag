@@ -1,4 +1,4 @@
-"""Configuration for evidence-first-rag — env-var driven, zero external deps.
+"""Configuration for hitgate — env-var driven, zero external deps.
 
 Every value is overridable via an environment variable (all prefixed ``RAG_``).
 The defaults make the tool usable with no setup: it indexes the current working
@@ -88,5 +88,5 @@ def require_hybrid() -> None:
     if missing:
         raise ImportError(
             "the bundled hybrid retriever needs the optional [hybrid] extra — "
-            "`pip install evidence-first-rag[hybrid]` (missing: " + ", ".join(missing) + ")"
+            "`pip install hitgate[hybrid]` (missing: " + ", ".join(missing) + ")"
         )
