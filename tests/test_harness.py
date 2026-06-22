@@ -55,3 +55,65 @@ def test_example_retriever_returns_protocol_shape(tmp_path, monkeypatch):
     res = retrieve("reciprocal rank fusion", top=3, scope="code")
     assert res and all("path" in r for r in res)
     assert "fusion.py" in res[0]["path"]  # the file with the matching terms ranks first
+
+
+def test_run_validates_retriever_result_has_path_key():
+    """Retriever returning result without 'path' key should raise clear ValueError."""
+    stub = lambda query, top, scope: [{"content": "missing path key"}]
+    cases = [
+        {"query": "q1", "expect_path_contains": "right.py", "expect_scope": "code"},
+    ]
+    with pytest.raises(ValueError) as exc_info:
+        run(cases, top=5, retriever=stub)
+    assert "path" in str(exc_info.value).lower()
+    assert "retriever" in str(exc_info.value).lower()
+
+
+def test_run_validates_retriever_result_path_is_string():
+    """Retriever returning non-string 'path' value should raise clear TypeError."""
+    stub = lambda query, top, scope: [{"path": None}]
+    cases = [
+        {"query": "q1", "expect_path_contains": "right.py", "expect_scope": "code"},
+    ]
+    with pytest.raises(TypeError) as exc_info:
+        run(cases, top=5, retriever=stub)
+    assert "path" in str(exc_info.value).lower()
+    assert "str" in str(exc_info.value).lower()
+
+
+def test_run_validates_retriever_result_path_is_string_with_int():
+    """Retriever returning integer 'path' value should raise clear TypeError."""
+    stub = lambda query, top, scope: [{"path": 42}]
+    cases = [
+        {"query": "q1", "expect_path_contains": "right.py", "expect_scope": "code"},
+    ]
+    with pytest.raises(TypeError) as exc_info:
+        run(cases, top=5, retriever=stub)
+    assert "path" in str(exc_info.value).lower()
+    assert "str" in str(exc_info.value).lower()
+
+
+def test_run_validates_retriever_result_is_dict():
+    """Retriever returning non-dict result should raise clear TypeError."""
+    stub = lambda query, top, scope: ["not a dict"]
+    cases = [
+        {"query": "q1", "expect_path_contains": "right.py", "expect_scope": "code"},
+    ]
+    with pytest.raises(TypeError) as exc_info:
+        run(cases, top=5, retriever=stub)
+    assert "mapping" in str(exc_info.value).lower() or "dict" in str(exc_info.value).lower()
+    assert "retriever" in str(exc_info.value).lower()
+
+
+def test_run_validates_with_valid_retriever_still_works():
+    """Valid retriever with proper shape should continue to work (regression test)."""
+    canned = {
+        "q1": [{"path": "src/right.py"}, {"path": "x.py"}],
+    }
+    stub = lambda query, top, scope: canned[query][:top]
+    cases = [
+        {"query": "q1", "expect_path_contains": "right.py", "expect_scope": "code"},
+    ]
+    out = run(cases, top=5, retriever=stub)
+    assert out["n"] == 1
+    assert out["hit@1"] == 1.0
