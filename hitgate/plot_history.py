@@ -19,6 +19,8 @@ The eval run itself needs only the three core deps.
 
 Usage:
   python -m hitgate.plot_history [--max-commits N] [--branch main]
+
+NOTE: This is a maintainer/dev-only utility (not a user-facing console command).
 """
 from __future__ import annotations
 

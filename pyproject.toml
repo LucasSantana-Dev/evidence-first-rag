@@ -45,6 +45,7 @@ hitgate-run = "hitgate.run:main"
 hitgate-compare = "hitgate.compare:main"
 hitgate-diff = "hitgate.diff:main"
 hitgate-generate = "hitgate.generate:main"
+hitgate-audit-contamination = "hitgate.audit_contamination:main"
 
 [tool.setuptools]
 packages = ["ragcore", "hitgate"]

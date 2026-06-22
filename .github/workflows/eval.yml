@@ -52,7 +52,7 @@ jobs:
         env:
           HF_HUB_OFFLINE: ${{ steps.hfcache.outputs.cache-hit == 'true' && '1' || '0' }}
           TRANSFORMERS_OFFLINE: ${{ steps.hfcache.outputs.cache-hit == 'true' && '1' || '0' }}
-        run: RAG_SOURCE_ROOTS="$PWD" python -m hitgate.test_determinism
+        run: RAG_SOURCE_ROOTS="$PWD" python -m pytest tests/test_determinism.py -q
       - name: Unit tests — tokenizer, rank modes, harness, adapter
         # Reuses the e5 model the eval gate already cached; tests duck-type LangChain so the
         # adapter suite needs no extra install.
