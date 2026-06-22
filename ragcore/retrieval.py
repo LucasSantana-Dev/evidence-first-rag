@@ -59,6 +59,41 @@ RERANK_AUTO_MARGIN = float(os.environ.get("RAG_RERANK_AUTO_MARGIN", "0.015"))
 RAG_CODE_RERANK = os.environ.get("RAG_CODE_RERANK", "off").lower() in ("on", "1", "true")
 
 
+def _auto_rerank_decision(rerank: bool, top1: float, top2: float, is_code_scope: bool) -> bool:
+    """Pure decision helper for auto-rerank trigger logic.
+
+    Encapsulates lines 255–273 of search(): determines whether to enable reranking based on:
+      - Low top-1 similarity (below RERANK_AUTO_THRESHOLD)
+      - Ambiguous top-2 margin (below RERANK_AUTO_MARGIN)
+      - Selective code-scope reranking (RAG_CODE_RERANK + code scope)
+      - Global auto-rerank gate (RERANK_AUTO)
+
+    Args:
+      rerank: Initial rerank state (False when this is called; None is pre-checked in search())
+      top1: Highest cosine similarity score (or 0.0 if no results)
+      top2: Second-highest cosine similarity score (or 0.0 if <2 results)
+      is_code_scope: Whether scope_types includes "code"
+
+    Returns:
+      True if reranking should be enabled, False otherwise.
+    """
+    # Auto-trigger rerank on weak/ambiguous queries (if not explicitly disabled).
+    # NOTE (2026-06-15): in bge code-rerank mode, the configured reranker (RAG_RERANK_MODEL,
+    # e.g. bge-reranker-v2-m3) is validated ONLY for code scope (ADR 0011). Letting the auto
+    # path rerank non-code scopes with it regressed memory retrieval -10.5pp (measured:
+    # memory 0.921 -> 0.816 on the live rerank=None path). So in bge mode, confine ALL
+    # reranking to code scope. In default (ms-marco) mode, auto-rerank fires on any scope as
+    # before (it was net-positive there).
+    auto_allowed = RERANK_AUTO and (not RAG_CODE_RERANK or is_code_scope)
+    if not rerank and auto_allowed:
+        if top1 < RERANK_AUTO_THRESHOLD or (top1 - top2) < RERANK_AUTO_MARGIN:
+            rerank = True
+    # Selective code-scope rerank (ADR 0011): the fused ranking is weakest for code.
+    if not rerank and RAG_CODE_RERANK and is_code_scope:
+        rerank = True
+    return rerank
+
+
 def _get_reranker():
     global _reranker
     if _reranker is None:
@@ -255,22 +290,9 @@ def search(
     if rerank is None:
         rerank = os.environ.get("RAG_RERANK", "off").lower() in ("on", "1", "true")
         is_code_scope = bool(scope_types and any("code" in s for s in scope_types))
-        # Auto-trigger rerank on weak/ambiguous queries (if not explicitly disabled).
-        # NOTE (2026-06-15): in bge code-rerank mode, the configured reranker (RAG_RERANK_MODEL,
-        # e.g. bge-reranker-v2-m3) is validated ONLY for code scope (ADR 0011). Letting the auto
-        # path rerank non-code scopes with it regressed memory retrieval -10.5pp (measured:
-        # memory 0.921 -> 0.816 on the live rerank=None path). So in bge mode, confine ALL
-        # reranking to code scope. In default (ms-marco) mode, auto-rerank fires on any scope as
-        # before (it was net-positive there).
-        auto_allowed = RERANK_AUTO and (not RAG_CODE_RERANK or is_code_scope)
-        if not rerank and auto_allowed:
-            top1 = float(cos[cos_order[0]]) if len(cos_order) > 0 else 0.0
-            top2 = float(cos[cos_order[1]]) if len(cos_order) > 1 else 0.0
-            if top1 < RERANK_AUTO_THRESHOLD or (top1 - top2) < RERANK_AUTO_MARGIN:
-                rerank = True
-        # Selective code-scope rerank (ADR 0011): the fused ranking is weakest for code.
-        if not rerank and RAG_CODE_RERANK and is_code_scope:
-            rerank = True
+        top1 = float(cos[cos_order[0]]) if len(cos_order) > 0 else 0.0
+        top2 = float(cos[cos_order[1]]) if len(cos_order) > 1 else 0.0
+        rerank = _auto_rerank_decision(rerank, top1, top2, is_code_scope)
 
     if rerank:
         candidate_k = min(len(meta), max(top * 4, 20))

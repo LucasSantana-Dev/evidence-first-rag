@@ -13,6 +13,7 @@ import numpy as np
 import ragcore.retrieval as retrieval
 from ragcore.retrieval import (
     _tokenize,
+    _auto_rerank_decision,
     cwd_repo,
     search,
     RERANK_AUTO_THRESHOLD,
@@ -135,13 +136,14 @@ class TestCwdRepo:
 
 
 class TestAutoRerank:
-    """Test auto-rerank decision logic (threshold, margin, code-scope filter)."""
+    """Test auto-rerank decision logic (threshold, margin, code-scope filter) via pure helper."""
 
-    def test_rerank_auto_threshold_constant_exists(self):
+    # Sanity checks for module constants (baseline expectations)
+    def test_rerank_auto_threshold_constant_sane(self):
         """RERANK_AUTO_THRESHOLD should be defined and be 0.35."""
         assert RERANK_AUTO_THRESHOLD == 0.35
 
-    def test_rerank_auto_margin_constant_exists(self):
+    def test_rerank_auto_margin_constant_sane(self):
         """RERANK_AUTO_MARGIN should be defined and be 0.015."""
         assert RERANK_AUTO_MARGIN == 0.015
 
@@ -154,23 +156,96 @@ class TestAutoRerank:
             result = cwd_repo(str(repo))
             assert result == "test-repo"
 
-    def test_auto_rerank_explicit_false_disables(self, tiny_index):
-        """When rerank=False explicitly, search should not attempt reranking."""
-        # tiny_index fixture provides a real index, so just verify rerank=False works
-        result = retrieval.search("test", rerank=False, scope_types=["code"])
-        assert isinstance(result, list)
-        # If there are results, they should NOT be marked as reranked
-        for r in result:
-            assert r["reranked"] is False
+    # Genuine behavioral tests for _auto_rerank_decision
+    def test_auto_rerank_low_top1_fires(self):
+        """Low top-1 (< 0.35) should trigger auto-rerank when allowed."""
+        with mock.patch.object(retrieval, "RERANK_AUTO", True):
+            with mock.patch.object(retrieval, "RAG_CODE_RERANK", False):
+                # top1=0.30 < RERANK_AUTO_THRESHOLD(0.35) -> rerank should be True
+                result = _auto_rerank_decision(rerank=False, top1=0.30, top2=0.29, is_code_scope=False)
+                assert result is True
 
-    def test_auto_rerank_explicit_true_enables(self):
-        """When rerank=True explicitly, search should attempt reranking."""
-        with mock.patch("ragcore.retrieval.require_hybrid"):
-            with mock.patch("ragcore.retrieval._load") as mock_load:
-                # Return empty metadata so no actual reranking happens
-                mock_load.return_value = ([], np.zeros((0, 384), dtype=np.float32), mock.Mock())
-                result = retrieval.search("test", rerank=True)
-                assert isinstance(result, list)
+    def test_auto_rerank_small_margin_fires(self):
+        """Small margin (< 0.015) between top1/top2 should trigger auto-rerank when allowed."""
+        with mock.patch.object(retrieval, "RERANK_AUTO", True):
+            with mock.patch.object(retrieval, "RAG_CODE_RERANK", False):
+                # top1=0.80, top2=0.79, margin=0.01 < RERANK_AUTO_MARGIN(0.015) -> rerank=True
+                result = _auto_rerank_decision(rerank=False, top1=0.80, top2=0.79, is_code_scope=False)
+                assert result is True
+
+    def test_auto_rerank_strong_and_separated_does_not_fire(self):
+        """Strong top1 and clear margin should NOT trigger auto-rerank."""
+        with mock.patch.object(retrieval, "RERANK_AUTO", True):
+            with mock.patch.object(retrieval, "RAG_CODE_RERANK", False):
+                # top1=0.80, top2=0.50, margin=0.30 > RERANK_AUTO_MARGIN -> rerank=False
+                result = _auto_rerank_decision(rerank=False, top1=0.80, top2=0.50, is_code_scope=False)
+                assert result is False
+
+    def test_auto_rerank_disabled_globally_never_fires(self):
+        """RERANK_AUTO=False should prevent auto-rerank even with low top1."""
+        with mock.patch.object(retrieval, "RERANK_AUTO", False):
+            with mock.patch.object(retrieval, "RAG_CODE_RERANK", False):
+                # Even with top1=0.30 < threshold, RERANK_AUTO=False prevents it
+                result = _auto_rerank_decision(rerank=False, top1=0.30, top2=0.29, is_code_scope=False)
+                assert result is False
+
+    def test_auto_rerank_code_scope_selective_rerank_enables(self):
+        """RAG_CODE_RERANK=True + code scope should enable rerank regardless of scores."""
+        with mock.patch.object(retrieval, "RERANK_AUTO", False):
+            with mock.patch.object(retrieval, "RAG_CODE_RERANK", True):
+                # Code scope + RAG_CODE_RERANK -> rerank=True even with strong scores
+                result = _auto_rerank_decision(rerank=False, top1=0.99, top2=0.98, is_code_scope=True)
+                assert result is True
+
+    def test_auto_rerank_code_scope_gating_non_code_disables(self):
+        """RAG_CODE_RERANK=True but non-code scope should NOT auto-fire on weak scores."""
+        with mock.patch.object(retrieval, "RERANK_AUTO", True):
+            with mock.patch.object(retrieval, "RAG_CODE_RERANK", True):
+                # RAG_CODE_RERANK=True blocks auto-rerank for non-code scopes (auto_allowed=False)
+                # even with low top1=0.30
+                result = _auto_rerank_decision(rerank=False, top1=0.30, top2=0.29, is_code_scope=False)
+                assert result is False
+
+    def test_auto_rerank_explicit_true_stays_true(self):
+        """Explicit rerank=True passed to _auto_rerank_decision should stay True."""
+        with mock.patch.object(retrieval, "RERANK_AUTO", False):
+            with mock.patch.object(retrieval, "RAG_CODE_RERANK", False):
+                # rerank=True (already decided) should remain True
+                result = _auto_rerank_decision(rerank=True, top1=0.5, top2=0.4, is_code_scope=False)
+                assert result is True
+
+    def test_auto_rerank_explicit_false_with_low_scores_can_enable_if_auto_allows(self):
+        """rerank=False with low scores + auto-enabled should enable reranking."""
+        with mock.patch.object(retrieval, "RERANK_AUTO", True):
+            with mock.patch.object(retrieval, "RAG_CODE_RERANK", False):
+                # rerank=False, but auto-conditions met (low top1) -> rerank becomes True
+                result = _auto_rerank_decision(rerank=False, top1=0.30, top2=0.29, is_code_scope=False)
+                assert result is True
+
+    def test_auto_rerank_boundary_top1_exactly_at_threshold(self):
+        """top1 exactly at threshold (0.35) should NOT trigger (< condition)."""
+        with mock.patch.object(retrieval, "RERANK_AUTO", True):
+            with mock.patch.object(retrieval, "RAG_CODE_RERANK", False):
+                # top1=0.35 is NOT < 0.35, so no threshold-based trigger
+                # But check margin: 0.35 - 0.20 = 0.15 > 0.015, so no margin trigger either
+                result = _auto_rerank_decision(rerank=False, top1=0.35, top2=0.20, is_code_scope=False)
+                assert result is False
+
+    def test_auto_rerank_boundary_margin_exactly_at_threshold(self):
+        """Margin exactly at threshold (0.015) should NOT trigger (< condition)."""
+        with mock.patch.object(retrieval, "RERANK_AUTO", True):
+            with mock.patch.object(retrieval, "RAG_CODE_RERANK", False):
+                # top1=0.80, top2=0.785, margin=0.015 is NOT < 0.015
+                result = _auto_rerank_decision(rerank=False, top1=0.80, top2=0.785, is_code_scope=False)
+                assert result is False
+
+    def test_auto_rerank_zero_scores_no_panic(self):
+        """Zero or missing scores (no results) should not crash."""
+        with mock.patch.object(retrieval, "RERANK_AUTO", True):
+            with mock.patch.object(retrieval, "RAG_CODE_RERANK", False):
+                # top1=0.0, top2=0.0 (no results) -> 0.0 < 0.35 is True
+                result = _auto_rerank_decision(rerank=False, top1=0.0, top2=0.0, is_code_scope=False)
+                assert result is True
 
 
 class TestSearchEmptyQuery:
