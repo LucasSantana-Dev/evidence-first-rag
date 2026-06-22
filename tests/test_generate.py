@@ -516,7 +516,9 @@ def test_generate_multi_intent_merge():
     """generate() merges cases from different intent classes."""
     from hitgate.generate import generate
 
-    cases = generate(min_confidence="medium", limit=10, roots=[Path(_REPO_ROOT)])
+    # Use limit=0 (unlimited) to ensure we capture all intents across the repo.
+    # limit=10 was too tight and sometimes yielded a single intent on CI (non-deterministic).
+    cases = generate(min_confidence="medium", limit=0, roots=[Path(_REPO_ROOT)])
 
     # Should have cases with multiple intents
     intents = {c.get("intent") for c in cases}
