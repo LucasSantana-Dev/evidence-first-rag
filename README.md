@@ -58,9 +58,9 @@ That eval indexes the repo's own source and scores 50 golden cases against it �
 | **Hit@5** (code scope, pure hybrid) — *the regression-gated headline* | **1.0** |
 | Hit@1 | 0.663 |
 | MRR | 0.800 |
-| Corpus | this repo, self-indexed · 101 cases |
+| Corpus | this repo, self-indexed · 99 cases |
 
-67 of 101 cases hit at rank 1; the misses are left in on purpose. Inflating a benchmark by
+63 of 99 cases hit at rank 1; the misses are left in on purpose. Inflating a benchmark by
 quietly dropping the cases it fails is the first thing this project refuses to do — see
 [DECISIONS.md](./DECISIONS.md); measured before/after deltas are in
 [CHANGELOG.md](./CHANGELOG.md). An honest ablation — where **BM25-only wins Hit@1**
