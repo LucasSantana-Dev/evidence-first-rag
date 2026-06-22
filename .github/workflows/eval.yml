@@ -28,8 +28,10 @@ jobs:
         with:
           path: ~/.cache/huggingface
           key: hf-models-multilingual-e5-small-v1
-      - name: Install the harness + bundled retriever (editable, [hybrid] extra)
-        run: pip install -e ".[hybrid]"
+      - name: Install the harness + bundled retriever (editable, [hybrid] extra) + pytest
+        # pytest is needed by the determinism gate below (it runs `python -m pytest`), which
+        # executes BEFORE the unit-tests step — so install it here, not just there.
+        run: pip install -e ".[hybrid]" pytest
       # On a cache hit, go fully offline so HF isn't contacted at all (no HEAD -> no 429).
       # On a cache miss (first run), stay online to download + populate the cache.
       - name: Eval gate — auto-builds the index, compares Hit@K to the frozen baseline (±5pp)
