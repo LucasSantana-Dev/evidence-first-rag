@@ -1,142 +1,101 @@
-# ADR-0011: Selective code-scope reranking with bge-reranker-v2-m3
+# ADR-0011: Selective code-scope reranking
 
 ## Context
 
 After validating the baseline hybrid retriever (BM25 + dense + RRF) across a 50-case golden set,
-code-scope queries emerged as the weakest link: Hit@1=0.529 for retrieval-intent cases (queries
-seeking "where is X" answers in code). For these queries, the hybrid fused ranking often buries
-the correct chunk at ranks 6–20 — a problem a strong cross-encoder reranker could address.
+code-scope queries emerged as a measurable weak point. The hybrid fused ranking often ranks the
+correct code chunk outside the top 5 for certain code-seeking queries.
 
-The obvious move is to apply reranking globally (all scopes). However, earlier work (CHANGELOG
-2026-06-17, ADR-0005) discovered that global reranking regressed memory/documentation retrieval,
-suggesting the cross-encoder is tuned for code similarity, not prose.
+The obvious move would be to apply reranking globally (all scopes). However, the critical finding
+from ROADMAP §5 is that **forced global reranking regresses Hit@5 from 1.0 → 0.96 for both
+models** — demoting 2 of 50 cases past rank 5 across all scope types. This uniform regression
+suggests the cross-encoder is tuned for code similarity and degrades on non-code prose.
 
 The question: can reranking be scoped to code queries only, recovering code performance without
-regressing the rest of the corpus?
+regressing other scopes?
 
 ## Decision
 
-**Apply the bge-reranker-v2-m3 cross-encoder selectively to code-scope queries only.** Default
-is OFF (`RAG_CODE_RERANK=off`) because the model is ~2.2GB and machine-local; enable with
-`RAG_RERANK_MODEL=BAAI/bge-reranker-v2-m3` (and ensure the model is cached locally) only where
-disk space and latency overhead are acceptable.
+**Apply cross-encoder reranking selectively to code-scope queries only (`RAG_CODE_RERANK`, default OFF).**
 
-### Measured baseline (50-case golden set, no reranking, hybrid mode, 2026-06-15)
+The selective operating point was validated during development (2026-06-15) and avoids the
+measured Hit@5 regression of forced-global reranking. Non-code scopes remain on fused ranking,
+capturing the gains on code without regressions elsewhere.
 
-```
-Overall:     Hit@1=0.56,  Hit@5=1.0,  MRR=0.741
-Code scope:  Hit@1=0.529, Hit@5=1.0,  MRR=0.725
-```
+Rationale:
+- **Forced-global regresses Hit@5 uniformly:** Both ms-marco and bge drop Hit@5 1.0→0.96 when
+  applied to all scopes (ROADMAP §5).
+- **Code is the weak spot for fused ranking:** Selective reranking recovers it where needed.
+- **Graceful fallback:** If the reranker is unavailable or fails, queries complete on fused
+  ranking with no data loss (stderr warning logged).
 
-Per-intent breakdown (code scope):
+## Baseline (50-case golden set, no reranking, hybrid mode, ROADMAP §5)
 
-| Intent | n | Hit@1 | Hit@5 | MRR |
-|--------|---|-------|-------|---------|
-| retrieval (code-seeking) | 17 | 0.529 | 1.0 | 0.725 |
-| indexing | 14 | 0.643 | 1.0 | 0.821 |
-| infrastructure | 19 | 0.526 | 1.0 | 0.695 |
+Aggregate: Hit@1=0.56, Hit@5=1.0, MRR=0.741
 
-### With selective bge-reranker-v2-m3 (code scope only)
+Code is the measured weak point for hybrid fused ranking; selective reranking on code scope
+only avoids the Hit@5 regression observed with forced-global reranking.
 
-When `RAG_CODE_RERANK=on` and `RAG_RERANK_MODEL=BAAI/bge-reranker-v2-m3`:
+## Key constraint: the exact selective-scope deltas are NOT in committed artifacts
 
-**Measured improvement** (from `ragcore/retrieval.py` line 56–57, validated 2026-06-15):
-```
-Code-scope gains:     +4.9pp Hit@1 (measured vs baseline)
-Overall gains:        +2.1pp Hit@1 (weighted across all scopes)
-Non-code scopes:      Unchanged (queries routed to fused ranking)
-Hit@5:                Maintained at 1.0 across all intent classes (no regression)
-```
+Earlier work derived specific deltas (e.g., "+4.9pp code / +2.1pp overall") from inline validation
+during development, but these measurements were never committed to a reproducible ablation file.
+The **validated finding** is qualitative: selective code-scope reranking captures gains where
+fused ranking is weakest (code) while avoiding the Hit@5 regression observed with forced-global
+reranking.
 
-This means:
-- **Retrieval queries (code-seeking):** Hit@1 improves from 0.529 to ~0.578 (+4.9pp)
-- **Overall (aggregate across all intents):** Hit@1 improves from 0.56 to ~0.581 (+2.1pp)
-- **Infrastructure & memory retrieval:** Unchanged from baseline (the queries don't trigger code-scope reranking)
+**Reopen trigger: commit a standalone selective code-scope ablation to quantify the exact delta.**
+This ADR documents the *strategy* (selective, not global) and *rationale* (avoid regression); the
+exact *numbers* require a proper ablation commit alongside the implementation.
 
-### Why selective, not global
-
-Applying the same reranker globally to *all* scopes (code + infrastructure + indexing):
-
-```
-Global reranking (all scopes with bge-v2-m3):
-  Overall MRR: 0.741 → 0.720 (−2.1pp regression, especially infrastructure/memory)
-```
-
-Infrastructure-intent cases (config files, documentation about tooling) perform worse when
-reranked by a code-tuned cross-encoder — the model's similarity signal does not transfer
-to prose. The solution is confinement: only code-scope queries run through the cross-encoder;
-non-code scopes remain on the fused ranking.
-
-### Graceful degradation (reranker unavailable)
-
-If the reranker model is not cached locally, or if `sentence_transformers.CrossEncoder` raises
-an exception during prediction (e.g., out of memory, model corruption), the query falls back to
-the fused ranking transparently. This ensures machines without the 2.2GB model or with
-constrained memory still work correctly at the baseline floor.
-
-Fallback is logged as a warning (stderr) so operators can see when it's happening, but queries
-complete successfully.
-
-## Measured evidence
-
-**Primary evidence:** Inline measurement record in `ragcore/retrieval.py` (lines 54–60), dated
-2026-06-15, documenting the validation decision before the 2026-06-16 public release.
-
-**Reproducible baseline files** in `hitgate/`:
-- `bge-baseline-norerank.json`: 50-case baseline (code scope Hit@1=0.529, MRR=0.725)
-- `abl-hybrid-rerank.json`: 12-case code-only demo confirming the fallback-to-fused-ranking
-  path works correctly when the reranker is used
-
-**Post-release validation:** The selective reranking was verified to ship with the codebase's own
-index: `eval/run.py` with the bundled hybrid + selective rerank on a self-indexed 101-case set
-(CHANGELOG 2026-06-20) confirms Hit@5=1.0 across all intent classes is maintained.
-
-## Why bge-reranker-v2-m3 and not ms-marco-MiniLM-L-6-v2
-
-From `ragcore/retrieval.py` (Pareto table, ROADMAP #5):
-
-| Model | Size | Latency | Hit@1 (code) | MRR (code) | Notes |
-|-------|------|---------|---------|---------|---------|
-| ms-marco-MiniLM-L-6-v2 | 88MB | 48ms/query | 0.529 | 0.696 | portable default |
-| bge-reranker-v2-m3 | 2.1GB | 88ms/query | **0.647** | **0.767** | strictly better, requires disk space |
-
-The bge model is chosen because it is strictly better: no regressions on quality, only a 1.8×
-latency increase. It is not the default because the 88MB vs 2.1GB tradeoff is real for
-machine-local cached models; operators choose based on their constraints.
-
-## Consequences
+## Implementation
 
 - `RAG_CODE_RERANK` environment variable (default `off`) controls whether code-scope
   reranking is enabled.
-- When `RAG_CODE_RERANK=on`, queries with `scope_types` containing "code" are submitted
-  to the cross-encoder; all other scope types use the fused ranking.
-- `RAG_RERANK_MODEL` selects which reranker model to use; only bge-reranker-v2-m3 has been
-  validated for code-scope selective reranking. Using a different model with
-  `RAG_CODE_RERANK=on` is unsupported and untested.
+- When `RAG_CODE_RERANK=on`, queries with `scope_types` containing "code" trigger the reranker;
+  all other scope types use the fused ranking.
+- `RAG_RERANK_MODEL` selects the reranker model; bge-reranker-v2-m3 is the validated choice
+  (see ADR-0010). Using a different model with `RAG_CODE_RERANK=on` is unsupported.
 - The fallback path is transparent: if the reranker fails, stderr logs a warning and the
-  query completes on fused ranking. No exceptions leak to the caller.
+  query completes on fused ranking. No exceptions leak to the caller (line 288–292 in `retrieval.py`).
+
+## Why not forced global reranking
+
+From ROADMAP §5 (50-case measurement, hybrid mode, forced reranking with both models):
+
+| Model | Hit@1 | Hit@5 (no rerank) | Hit@5 (forced) | Notes |
+|-------|-------|---------|---------|---------|
+| ms-marco | 0.62 | 1.0 | 0.96 | Regression: 2 cases demoted past rank 5 |
+| bge-v2-m3 | 0.82 | 1.0 | 0.96 | Regression: 2 cases demoted past rank 5 |
+
+The regression is uniform across scope types, indicating the cross-encoder prioritizes code-like
+signals. Selective confinement to code scope preserves the Hit@5=1.0 floor where fused ranking is
+strong (infrastructure, indexing) while allowing code to benefit where it's weak.
+
+## Consequences
+
 - The eval gate (`eval/check.sh`) measures the **no-rerank baseline** for reproducibility
-  (no reranker required to reproduce the gated Hit@5 number).
+  (no reranker model required to validate the gated Hit@5 number).
+- Code-scope queries have an optional path through the cross-encoder; non-code queries never
+  hit it, preserving baseline performance.
+- The strategy integrates with ADR-0010's model choice: selective code-scope triggers only when
+  explicitly enabled; the default is fused ranking for portability.
 
 ## Revisit when
 
-- Real usage patterns show a high density of code-scope queries where Hit@1 matters more
-  than Hit@5=1.0 — at that point consider making `RAG_CODE_RERANK=on` the default (requires
-  documenting the 2.2GB footprint more prominently).
-- A stronger code-tuned reranker becomes available (e.g., a reranker fine-tuned on
-  programming-language code-quality signals) — benchmark it against bge-v2-m3 using the same
-  selective-scope ablation and update the Pareto table.
-- A user reports the selective reranking firing unexpectedly (e.g., on non-code scopes that
-  happen to have "code" in the scope_type string) — refine the scope detection heuristic
-  (`is_code_scope` in `retrieval.py`).
-- The golden set grows past ~200 cases — re-validate that the code-rerank benefit holds
-  across a larger, more diverse corpus (current validation is on 50-case set).
-- Disk space or latency constraints change (e.g., better models emerge, faster hardware,
-  cloud inference available) — re-measure the portability vs. quality tradeoff.
+- A user reports the selective reranking firing unexpectedly on non-code scopes — refine the
+  `is_code_scope` heuristic in `retrieval.py:259`.
+- The golden set grows past ~200 cases and stratified per-intent measurement shows a code-intent
+  class visibly degrade in local runs — indicating the 50-case set missed a failure mode.
+- Disk space or latency constraints shift materially (e.g., better models emerge, faster hardware,
+  cloud inference available) — re-measure the selective-code tradeoff against the new frontier.
+- A user reports strong demand for code-scope reranking (high Hit@1 gain on live code queries)
+  — at that point consider making `RAG_CODE_RERANK=on` the default and documenting the model
+  requirement more prominently.
 
 ## Related
 
-- ADR-0005: Auto-rerank trigger margin calibration (separate, applies to all scopes)
-- CHANGELOG (2026-06-17): Reranker Pareto table and ablation results
-- `ragcore/retrieval.py` (lines 54–60): Config and fallback logic
-- `eval/run.py --retriever`: Retriever-agnostic harness (allows external retrievers to bypass reranking)
+- ADR-0010: Reranker model choice (bge-v2-m3 vs ms-marco; this ADR governs WHEN, 0010 governs WHICH)
+- ADR-0005: Auto-rerank trigger calibration (separate strategy for ambiguity-based selective triggering)
+- ROADMAP §5: Reranker Pareto table and forced-global regression finding
+- `ragcore/retrieval.py` (lines 259, 273–275): Scope detection and selective trigger
