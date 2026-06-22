@@ -5,8 +5,6 @@
 **`pip install hitgate`** installs the harness (dependency-free; measures *any* retriever via `--retriever`).
 **`pip install "hitgate[hybrid]"`** adds the bundled hybrid retriever used in the demo below.
 
-> **Note:** `hitgate` is not yet published to PyPI. For now, install from source: `pip install -e ".[hybrid]"`.
-
 > **A pytest-style regression gate for retrieval quality** — plus the small hybrid
 > retriever it was built to measure. Point it at *your* retriever and find out whether a
 > change helped or hurt, when you have **no labeled data and no users to A/B against**.
