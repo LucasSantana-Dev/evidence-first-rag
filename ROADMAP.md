@@ -116,13 +116,13 @@ Frozen to `hitgate/baseline.example.json` and `hitgate/golden.demo.jsonl`.
 | Mode | Hit@5 | Hit@1 | Hit@3 | MRR |
 |---|---|---|---|---|
 | hybrid (default) | **0.99** | 0.636 | 0.96 | 0.784 |
-| BM25-only | 0.939 | **0.747** | 0.859 | **0.808** |
-| dense-only | 0.889 | 0.616 | 0.838 | 0.725 |
+| BM25-only | 0.909 | **0.737** | 0.859 | **0.803** |
+| dense-only | 0.929 | 0.667 | 0.848 | 0.764 |
 
-Gate criterion met: BM25-only drops Hit@5 by 5.1pp; dense-only by 10.1pp — both exceed
+Gate criterion met: BM25-only drops Hit@5 by 8.1pp; dense-only by 6.1pp — both exceed
 the ≥5pp discriminability threshold. The 99-case set can detect a real retrieval change.
 
-BM25-only wins Hit@1 (0.747 vs 0.636) — consistent with the identifier-heavy subset
+BM25-only wins Hit@1 (0.737 vs 0.636) — consistent with the identifier-heavy subset
 behaving the same way as on smaller sets. Hybrid wins Hit@5 and is the only mode
 to surface the correct file in the top 5 for 98 of 99 cases.
 

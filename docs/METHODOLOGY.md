@@ -25,22 +25,22 @@ RAG_RANK_MODE=hybrid RAG_RERANK_AUTO=off python -m hitgate.run --dataset hitgate
 
 | Rank mode | Hit@1 | Hit@3 | Hit@5 | MRR |
 |---|---|---|---|---|
-| BM25-only | **0.752** | 0.871 | 0.941 | **0.820** |
-| dense-only | 0.624 | 0.851 | 0.901 | 0.735 |
-| **hybrid (RRF + symbol boost)** | 0.663 | **0.911** | **1.0** | 0.800 |
+| BM25-only | **0.737** | 0.859 | 0.909 | **0.803** |
+| dense-only | 0.667 | 0.848 | 0.929 | 0.764 |
+| **hybrid (RRF + symbol boost)** | 0.636 | **0.96** | **0.99** | 0.784 |
 
-Hybrid is the only mode that achieves Hit@5=1.0. BM25 wins Hit@1 (0.752) and MRR (0.820) —
+Hybrid is the only mode that achieves Hit@5=0.99 across all cases. BM25 wins Hit@1 (0.737) and MRR (0.803) —
 the identifier-heavy subset continues to favour lexical matching, consistent with smaller
-ablations. Dense-only drops Hit@5 by 9.9pp; BM25-only by 5.9pp — both exceed the
+ablations. Dense-only drops Hit@5 by 6.1pp; BM25-only by 8.1pp — both exceed the
 ≥5pp discriminability gate, confirming the 99-case set can detect real retrieval changes.
 
 Per-intent breakdown (Hit@5 at 99 cases):
 
 | Rank mode | retrieval (n=30) | indexing (n=22) | infrastructure (n=47) |
 |---|---|---|---|
-| BM25-only | 0.900 | 0.955 | 0.959 |
-| dense-only | 0.867 | 0.864 | 0.918 |
-| **hybrid** | **1.0** | **1.0** | **1.0** |
+| BM25-only | 0.9 | 0.909 | 0.915 |
+| dense-only | 0.9 | 0.955 | 0.936 |
+| **hybrid** | **0.967** | **1.0** | **1.0** |
 
 Hybrid is the only mode that achieves Hit@5=1.0 across all three intent classes simultaneously.
 Dense-only is weakest on retrieval (where BM25 token overlap dominates) and BM25-only struggles
