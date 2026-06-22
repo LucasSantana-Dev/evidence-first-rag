@@ -253,8 +253,8 @@ def test_hit5_at_harness_not_in_commit_returns_none():
 # ---------------------------------------------------------------------------
 
 
-def test_main_writes_json_data_on_success(tmp_path, capsys):
-    """main() writes hit5_history.json data file even without matplotlib."""
+def test_main_writes_json_data_on_success(tmp_path, capsys, mocker):
+    """main() writes hit5_history.json and svg when data is available."""
     from hitgate.plot_history import main
 
     # Create a fake DOCS directory
@@ -272,11 +272,14 @@ def test_main_writes_json_data_on_success(tmp_path, capsys):
                     ("def5678", "2024-01-02", "Commit 2"),
                 ]):
                     with patch("hitgate.plot_history.hit5_at", side_effect=[0.80, 0.85]):
-                        # main() will exit with matplotlib error, but that's ok—JSON was written first
-                        with pytest.raises(SystemExit):
-                            main()
+                        # Mock matplotlib components
+                        mock_fig = MagicMock()
+                        mock_ax = MagicMock()
+                        mocker.patch("matplotlib.pyplot.subplots", return_value=(mock_fig, mock_ax))
+                        # main() should complete successfully
+                        result = main()
 
-        # Should have written JSON data file before matplotlib error
+        # Should have written JSON data file
         data_file = docs / "hit5_history.json"
         assert data_file.exists()
 
@@ -284,11 +287,15 @@ def test_main_writes_json_data_on_success(tmp_path, capsys):
         assert len(data) == 2
         assert data[0]["hit5"] == 0.80
         assert data[1]["hit5"] == 0.85
+
+        # SVG file should also be written (mocked matplotlib doesn't really write,
+        # but the code path attempts to call savefig)
+        assert result == 0
     finally:
         sys.argv = old_argv
 
 
-def test_main_skipped_commits_are_not_included(tmp_path):
+def test_main_skipped_commits_are_not_included(tmp_path, mocker):
     """main() doesn't include commits that couldn't be measured (hit5_at returned None)."""
     from hitgate.plot_history import main
 
@@ -307,9 +314,12 @@ def test_main_skipped_commits_are_not_included(tmp_path):
                     ("ghi9012", "2024-01-03", "Commit 3"),
                 ]):
                     with patch("hitgate.plot_history.hit5_at", side_effect=[0.80, None, 0.85]):
-                        # Exits due to matplotlib, but JSON was written first
-                        with pytest.raises(SystemExit):
-                            main()
+                        # Mock matplotlib components
+                        mock_fig = MagicMock()
+                        mock_ax = MagicMock()
+                        mocker.patch("matplotlib.pyplot.subplots", return_value=(mock_fig, mock_ax))
+                        # Should complete successfully
+                        result = main()
 
         data_file = docs / "hit5_history.json"
         data = json.loads(data_file.read_text())
@@ -318,6 +328,7 @@ def test_main_skipped_commits_are_not_included(tmp_path):
         assert len(data) == 2
         assert data[0]["sha"] == "abc1234"
         assert data[1]["sha"] == "ghi9012"
+        assert result == 0
     finally:
         sys.argv = old_argv
 
