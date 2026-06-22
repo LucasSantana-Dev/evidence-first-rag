@@ -37,6 +37,7 @@ Terms are used precisely as defined here; agents should use these when naming co
 **`ragcore/`** — the bundled hybrid retriever.
 - **Files:** `build.py` (corpus indexing, AST-aware chunking, embedding), `retrieval.py` (fused ranking, reranking), `chunkers.py` (language-aware chunk boundaries), `config.py` (env var knobs), `query.py` (CLI), `pack.py` (context packing for LLM), `mcp_server.py` (MCP interface).
 - **Responsibility:** index code/docs/commits, store embeddings and text in SQLite, search and rank by hybrid logic. One retriever implementation.
+- **Scope:** indexes code + structured docs (README, CHANGELOG, `docs/**`) by design — not arbitrary markdown vaults. The bundled retriever is code-tuned; markdown-vault retrieval is out of scope.
 - **Dependency shape:** sentence-transformers, numpy, rank-bm25 (declared as `[hybrid]` extra in `pyproject.toml`).
 - **Boundary:** `ragcore` is *only* imported inside `hitgate.run:builtin_retriever()` when `--retriever` is not specified. The harness measures it like any other retriever; it is not baked in.
 

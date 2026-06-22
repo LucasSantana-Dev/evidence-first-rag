@@ -96,6 +96,8 @@ size.** Clean functional boundaries (homelab, ADT) → 0.85. Same-layer UI compo
 
 Full methodology, miss taxonomy, and reproduce commands: [docs/METHODOLOGY.md](./docs/METHODOLOGY.md).
 
+**Scope boundary:** hitgate indexes a repo's **code + structured docs** (README, CHANGELOG, `docs/**`) — not arbitrary markdown vaults. Pointed at a flat notes vault, it indexes little by design, and the bundled retriever is code-tuned; markdown-vault retrieval is out of current scope.
+
 ## How it works
 
 - **Hybrid retrieval** — dense embeddings (`intfloat/multilingual-e5-small`) + lexical
