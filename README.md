@@ -31,8 +31,10 @@ and be ruthlessly honest about what the numbers do and don't prove.
 > in absolute terms: the self-indexed Hit@K measures **retrievability** (was the expected path
 > retrieved?), **not human-judged relevance**, and on auto-generated eval sets it runs
 > optimistic by construction. Gate on the *delta*; to certify absolute quality, validate
-> against a hand-labeled holdout (the reopen trigger in [DECISIONS.md](./DECISIONS.md) §2;
-> full vocabulary in [CONTEXT.md](./CONTEXT.md)).
+> against a hand-labeled holdout — a path deferred in
+> [ADR-0012](./docs/adr/0012-caveat-investment-timing.md) (reopen triggers there;
+> [DECISIONS.md](./DECISIONS.md) §2 for the broader deferral; full vocabulary in
+> [CONTEXT.md](./CONTEXT.md)).
 
 ## Quickstart (reproducible in ~10 seconds)
 
