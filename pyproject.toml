@@ -49,3 +49,7 @@ hitgate-audit-contamination = "hitgate.audit_contamination:main"
 
 [tool.setuptools]
 packages = ["ragcore", "hitgate"]
+include-package-data = true
+
+[tool.setuptools.package-data]
+hitgate = ["golden.demo.jsonl", "baseline.example.json", "baseline.auto-rerank.json"]
